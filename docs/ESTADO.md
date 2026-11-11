@@ -1,7 +1,7 @@
 # Estado del proyecto
 
 **Última actualización:** 11 de noviembre de 2026
-**Change activo:** `01-proyecto-lifespan-health` — 9 de 13 tareas verificadas
+**Change activo:** ninguno — `01-proyecto-lifespan-health` cerrado con 13 de 13 tareas
 
 ---
 
@@ -25,7 +25,7 @@ La consigna completa está en `docs/Parcial_Cap1a4_Consigna.pdf`.
 | Consigna copiada a `docs/` | ✅ |
 | `env.example` sin secretos | ✅ |
 | Change `01` propuesto, diseñado y validado (`--strict`) | ✅ |
-| Change `01` implementado | ✅ 9/13 tareas verificadas |
+| Change `01` implementado y verificado contra PostgreSQL 16 | ✅ 13/13 tareas |
 
 ### Archivos creados
 
@@ -41,89 +41,93 @@ requirements.txt               fastapi[standard], sqlmodel, sqlalchemy[asyncio],
 test/health.http               4 casos con resultado esperado
 ```
 
-### Tareas verificadas de `01`
+### Tareas de `01` (13 de 13)
 
-`1.1`, `1.2`, `2.1`, `2.2`, `2.3`, `3.2`, `4.2`, `5.2`, `5.3`.
+`1.1`, `1.2`, `2.1`, `2.2`, `2.3`, `3.1`, `3.2`, `3.3`, `4.1`, `4.2`, `5.1`, `5.2`, `5.3`.
 
-La más importante: **`3.2`** — arrancar sin `DATABASE_URL` termina con `EXIT=3`, error
-que nombra la variable, y el puerto 8000 no queda escuchando (caso D-05 de la consigna).
+Las verificaciones más relevantes, todas ejecutadas:
+
+| Caso | Evidencia |
+|---|---|
+| Arranque sin `DATABASE_URL` (D-05) | `uvicorn` termina con `EXIT=3`, el error nombra la variable y el puerto 8000 no queda escuchando |
+| Arranque real con base | `uvicorn` levanta, `app.state.engine` y `app.state.session_factory` en `True`, `create_all` ejecutado |
+| `/health/live` | 200 `{"estado":"vivo"}` con y sin base |
+| `/health/ready` con base | 200 `{"estado":"listo","base":"disponible"}`, `SELECT 1` visible con `SQL_ECHO=true` |
+| `/health/ready` sin base | 503 `{"estado":"no_listo","base":"no_disponible"}`, sin texto interno |
+| Cierre del motor | `pg_stat_activity` pasa de 2 a 1 conexiones al apagar |
 
 ---
 
-## Bloqueante
+## Entorno local (resuelto)
 
-**No hay base de datos disponible todavía.** El diagnóstico del entorno:
+El bloqueante del 11/11 quedó resuelto. **La virtualización nunca fue el problema:**
+el hipervisor ya estaba activo porque Windows lo usa para Seguridad Basada en
+Virtualización. Lo que faltaba era `VirtualMachinePlatform` y el subsistema WSL,
+la capa por la que Docker Desktop habla en Windows Home.
 
 | Dato | Valor |
 |---|---|
-| Windows | 11 **Home** Single Language |
-| Virtualización en BIOS (AMD-V) | ✅ activa (`VirtualizationFirmwareEnabled = True`) |
-| Hipervisor de Windows | ✅ cargado (`HypervisorPresent = True`, `HvHost` corriendo) |
-| `Microsoft-Windows-Subsystem-Linux` | ✅ habilitada |
-| `VirtualMachinePlatform` | ✅ habilitada |
-| Paquete WSL | ✅ instalado, versión 3.0.5 |
-| `vmcompute` | ⏳ aparece después del reinicio |
-| Docker Desktop | Procesos corriendo, pero sin motor Linux hasta reiniciar |
+| Windows | 11 **Home** Single Language (build 26200) |
+| CPU | AMD Ryzen 5 7520U — AMD-V activa en BIOS |
+| WSL | 3.0.5, versión predeterminada 2 |
+| `VirtualMachinePlatform` | habilitada (`vmcompute` presente) |
+| Docker Desktop | 29.7.2, motor Linux funcionando |
+| PostgreSQL | 16.15 en contenedor `pg-libreria` |
 
-**La virtualización nunca fue el problema.** El hipervisor ya estaba activo
-(Windows lo usa para Seguridad Basada en Virtualización). Lo que faltaba era
-`VirtualMachinePlatform` y el subsistema WSL, que son la capa por la que Docker
-Desktop habla en Windows Home. Ambos quedaron habilitados el 11/11/2026; falta
-**reiniciar** para que tomen efecto.
+### Trampa a tener presente: hay un PostgreSQL 18 nativo
 
-**Por qué importa para la nota:** los ejercicios 7 (15 %) y 8 (10 %) exigen
-`docker build`, `docker run` y una imagen `python:3.12-alpine`. Sin WSL2 no se
-pueden entregar.
+La máquina tiene instalado **PostgreSQL 18 como servicio de Windows**
+(`postgresql-x64-18`), que ocupa `0.0.0.0:5432`. Por eso el contenedor se publica
+en **`127.0.0.1:5433`** y la `DATABASE_URL` apunta ahí:
 
-### Tareas de `01` que quedaron sin marcar
+```
+DATABASE_URL=postgresql+asyncpg://libreria:<contraseña>@127.0.0.1:5433/libreria
+```
 
-| Tarea | Qué falta |
-|---|---|
-| `3.1` | Arranque real con `create_all` contra una base |
-| `3.3` | Cierre ordenado del motor (`pg_stat_activity` vuelve al valor previo) |
-| `4.1` | Respuestas HTTP reales de `/health/ready` y la consulta `SELECT 1` |
-| `5.1` | Reconstrucción completa: `.venv`, `.env` con base real, `uvicorn` |
+Si alguna vez se recrea el contenedor, respetar el puerto 5433 y usar `127.0.0.1`
+en lugar de `localhost` (con `localhost` el sistema puede resolver primero `::1`).
 
-Ninguna se marcó como cumplida sin haberla ejecutado.
+```powershell
+docker run -d --name pg-libreria -p 127.0.0.1:5433:5432 `
+  -e POSTGRES_USER=libreria `
+  -e POSTGRES_PASSWORD=<la de .env> `
+  -e POSTGRES_DB=libreria `
+  --restart unless-stopped `
+  postgres:16
+```
+
+### Si la instalación de WSL vuelve a fallar
+
+`DISM` devuelve `3010` (éxito, reinicio requerido). Si tras reiniciar `vmcompute`
+sigue sin existir, revisar en `C:\Windows\Logs\CBS\CBS.log` si la transacción quedó
+en `Pended`. La causa habitual es **Docker Desktop corriendo durante la
+habilitación**: hay que cerrarlo antes de repetir `dism /online /enable-feature`.
 
 ---
 
 ## Próximo paso
 
-1. **Reiniciar la máquina.** Los componentes de WSL ya están instalados; el
-   reinicio es lo único que falta para que `VirtualMachinePlatform` y
-   `vmcompute` queden operativos.
+1. Archivar `01-proyecto-lifespan-health` (sincroniza las tres delta specs a
+   `openspec/specs/`: `project-structure`, `runtime-lifecycle`, `health-checks`).
 
-2. Abrir Docker Desktop y esperar a que el daemon responda
-   (`docker info --format '{{.ServerVersion}}'`).
+2. Proponer `02-modelos-relaciones` — 22 % de la nota. Es el change más pesado:
+   nueve tablas (`editorial`, `genero`, `autor`, `libro`, `libro_autor`, `cliente`,
+   `perfil_cliente`, `venta`, `renglon_venta`), restricciones de unicidad y claves
+   foráneas. El dominio sale de la semilla del frontend
+   (`libreria_abc\js\datos-iniciales.js`): 7 editoriales, 5 géneros, 10 autores,
+   9 libros, 4 clientes, 2 ventas.
 
-3. Levantar la base:
-
-   ```powershell
-   docker run -d --name pg-libreria -p 5432:5432 `
-     -e POSTGRES_USER=libreria `
-     -e POSTGRES_PASSWORD=<generada> `
-     -e POSTGRES_DB=libreria postgres:16
-   ```
-
-4. Crear `.env` a partir de `env.example` con la `DATABASE_URL` real.
-
-5. Cerrar las tareas `3.1`, `3.3`, `4.1` y `5.1` del change `01`.
-
-6. Archivar `01` y proponer `02-modelos-relaciones` (22 % de la nota).
-
-### Si el reinicio no alcanza
-
-Comprobar en PowerShell **como administrador**:
+### Cómo levantar el entorno en una sesión nueva
 
 ```powershell
-wsl --status
-wsl --update
+docker start pg-libreria          # la base (ya tiene --restart unless-stopped)
+.venv\Scripts\Activate.ps1        # el entorno
+uvicorn app.main:app --reload     # la aplicación
 ```
 
-Si `wsl --status` sigue diciendo «no instalado», revisar que la característica
-`VirtualMachinePlatform` figure en `Enabled` con
-`Get-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform`.
+Si `.venv` no existe: `python -m venv .venv` y
+`.venv\Scripts\python.exe -m pip install -r requirements.txt`.
+Si `.env` no existe: copiarlo de `env.example` y poner la contraseña real.
 
 ---
 
@@ -131,7 +135,7 @@ Si `wsl --status` sigue diciendo «no instalado», revisar que la característic
 
 | Change | Ejercicio | Peso | Estado |
 |---|---|---|---|
-| `01-proyecto-lifespan-health` | 1 · Proyecto, conexión y ciclo de vida | 8 % | En curso (9/13) |
+| `01-proyecto-lifespan-health` | 1 · Proyecto, conexión y ciclo de vida | 8 % | Completo (13/13) |
 | `02-modelos-relaciones` | 2 · Modelos, restricciones y relaciones | 22 % | Pendiente |
 | `03-contratos-crud` | 3 · Contratos y CRUD | 12 % | Pendiente |
 | `04-altas-con-relaciones` | 4 · Altas con relaciones | 17 % | Pendiente |
