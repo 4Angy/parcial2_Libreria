@@ -1,0 +1,27 @@
+### Caso 1: proceso vivo, sin depender de la base
+GET http://127.0.0.1:8000/health/live
+
+# Resultado esperado: 200
+# {"estado":"vivo"}
+
+### Caso 2: disponibilidad con la base arriba
+GET http://127.0.0.1:8000/health/ready
+
+# Resultado esperado: 200
+# {"estado":"listo","base":"disponible"}
+
+### Caso 3: disponibilidad con la base detenida (caso manual)
+GET http://127.0.0.1:8000/health/ready
+
+# Resultado esperado: 503
+# {"estado":"no_listo","base":"no_disponible"}
+# Para reproducirlo: detener PostgreSQL 16 y repetir la petición.
+# La sonda `live` debe seguir respondiendo 200.
+# El cuerpo no incluye el texto interno del error de la base.
+
+### Caso 4: arranque sin DATABASE_URL (caso manual, no es una petición HTTP)
+# Comando en PowerShell, sin DATABASE_URL en el entorno ni en .env:
+#   Remove-Item Env:DATABASE_URL -ErrorAction SilentlyContinue
+#   .venv\Scripts\uvicorn.exe app.main:app --port 8000
+# Resultado esperado: el proceso termina con código de salida distinto de
+# cero, el error nombra DATABASE_URL y el puerto 8000 no queda escuchando.
