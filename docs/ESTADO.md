@@ -52,17 +52,24 @@ que nombra la variable, y el puerto 8000 no queda escuchando (caso D-05 de la co
 
 ## Bloqueante
 
-**No hay base de datos disponible.** La causa raíz no es el proyecto:
+**No hay base de datos disponible todavía.** El diagnóstico del entorno:
 
 | Dato | Valor |
 |---|---|
 | Windows | 11 **Home** Single Language |
-| Hyper-V | No disponible (solo Pro/Enterprise) |
-| WSL | **No instalado** |
-| Docker Desktop | Procesos corriendo, pero sin motor Linux |
+| Virtualización en BIOS (AMD-V) | ✅ activa (`VirtualizationFirmwareEnabled = True`) |
+| Hipervisor de Windows | ✅ cargado (`HypervisorPresent = True`, `HvHost` corriendo) |
+| `Microsoft-Windows-Subsystem-Linux` | ✅ habilitada |
+| `VirtualMachinePlatform` | ✅ habilitada |
+| Paquete WSL | ✅ instalado, versión 3.0.5 |
+| `vmcompute` | ⏳ aparece después del reinicio |
+| Docker Desktop | Procesos corriendo, pero sin motor Linux hasta reiniciar |
 
-Docker Desktop en Windows Home necesita WSL2. Sin WSL, el daemon no responde y
-no se puede levantar `postgres:16` en un contenedor.
+**La virtualización nunca fue el problema.** El hipervisor ya estaba activo
+(Windows lo usa para Seguridad Basada en Virtualización). Lo que faltaba era
+`VirtualMachinePlatform` y el subsistema WSL, que son la capa por la que Docker
+Desktop habla en Windows Home. Ambos quedaron habilitados el 11/11/2026; falta
+**reiniciar** para que tomen efecto.
 
 **Por qué importa para la nota:** los ejercicios 7 (15 %) y 8 (10 %) exigen
 `docker build`, `docker run` y una imagen `python:3.12-alpine`. Sin WSL2 no se
@@ -83,15 +90,14 @@ Ninguna se marcó como cumplida sin haberla ejecutado.
 
 ## Próximo paso
 
-1. Abrir PowerShell **como administrador** y correr:
+1. **Reiniciar la máquina.** Los componentes de WSL ya están instalados; el
+   reinicio es lo único que falta para que `VirtualMachinePlatform` y
+   `vmcompute` queden operativos.
 
-   ```powershell
-   wsl --install
-   ```
+2. Abrir Docker Desktop y esperar a que el daemon responda
+   (`docker info --format '{{.ServerVersion}}'`).
 
-2. Reiniciar la máquina.
-3. Abrir Docker Desktop y esperar a que el daemon responda.
-4. Levantar la base:
+3. Levantar la base:
 
    ```powershell
    docker run -d --name pg-libreria -p 5432:5432 `
@@ -100,18 +106,24 @@ Ninguna se marcó como cumplida sin haberla ejecutado.
      -e POSTGRES_DB=libreria postgres:16
    ```
 
-5. Crear `.env` a partir de `env.example` con la `DATABASE_URL` real.
-6. Cerrar las tareas `3.1`, `3.3`, `4.1` y `5.1` del change `01`.
-7. Archivar `01` y proponer `02-modelos-relaciones` (22 % de la nota).
+4. Crear `.env` a partir de `env.example` con la `DATABASE_URL` real.
 
-### Alternativa sin reinicio
+5. Cerrar las tareas `3.1`, `3.3`, `4.1` y `5.1` del change `01`.
+
+6. Archivar `01` y proponer `02-modelos-relaciones` (22 % de la nota).
+
+### Si el reinicio no alcanza
+
+Comprobar en PowerShell **como administrador**:
 
 ```powershell
-winget install -e --id PostgreSQL.PostgreSQL.16
+wsl --status
+wsl --update
 ```
 
-Desbloquea los ejercicios 1 a 6 (75 %) sin reiniciar, pero deja los 7 y 8
-pendientes hasta instalar WSL2 igual.
+Si `wsl --status` sigue diciendo «no instalado», revisar que la característica
+`VirtualMachinePlatform` figure en `Enabled` con
+`Get-WindowsOptionalFeature -Online -FeatureName VirtualMachinePlatform`.
 
 ---
 
