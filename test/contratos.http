@@ -1,0 +1,386 @@
+# Contratos HTTP del change 03.
+#
+# Ejecutar con `uvicorn app.main:app --port 8000` y la base sembrada.
+# Cada bloque declara `# esperado:` y las comprobaciones que hace el ejecutor:
+#   # captura: nombre        guarda el `id` de la respuesta y `{{nombre}}` lo reutiliza
+#   # contiene: a; b         fragmentos que deben aparecer en el cuerpo
+#   # no-contiene: a; b      fragmentos que no deben aparecer
+#   # cantidad: n            cantidad de elementos de una lista
+#   # lista-vacia: si        el cuerpo debe ser `[]`
+#   # es-null: campo         el campo debe ser `null`
+#   # todos-genero: id       todos los elementos deben tener ese `genero.id`
+#   # termina-en-z: campo    el campo debe terminar en `Z`
+#   # guarda-lista: nombre   guarda los `id` de una lista
+#   # sin-solape-con: nombre las dos listas no comparten elementos
+#
+# Los datos creados usan el prefijo `Prueba 03`. El bloque SQL de limpieza
+# está al final del archivo.
+
+### Salud: el proceso sigue vivo
+# esperado: 200
+# contiene: "estado":"vivo"
+GET http://127.0.0.1:8000/health/live
+
+### Salud: la base responde
+# esperado: 200
+# contiene: "estado":"listo"; "base":"disponible"
+GET http://127.0.0.1:8000/health/ready
+
+### Editoriales: alta válida
+# esperado: 201
+# captura: editorial_id
+# contiene: "nombre":"Prueba 03 Editorial"; "pais":"Argentina"
+POST http://127.0.0.1:8000/editoriales/
+Content-Type: application/json
+
+{
+  "nombre": "Prueba 03 Editorial",
+  "pais": "Argentina"
+}
+
+### Editoriales: alta repetida
+# esperado: 409
+# contiene: "detail":"Ya existe una editorial con ese nombre."
+# no-contiene: 23505; _key; duplicate key; editorial_nombre_key; Traceback
+POST http://127.0.0.1:8000/editoriales/
+Content-Type: application/json
+
+{
+  "nombre": "Prueba 03 Editorial",
+  "pais": "Argentina"
+}
+
+### Editoriales: lectura por id
+# esperado: 200
+# contiene: "nombre":"Prueba 03 Editorial"; "pais":"Argentina"
+GET http://127.0.0.1:8000/editoriales/{{editorial_id}}
+
+### Editoriales: recurso inexistente
+# esperado: 404
+# contiene: "detail":"La editorial no existe."
+GET http://127.0.0.1:8000/editoriales/9999
+
+### Editoriales: PATCH de un solo campo
+# esperado: 200
+# contiene: "pais":"Chile"; "nombre":"Prueba 03 Editorial"
+PATCH http://127.0.0.1:8000/editoriales/{{editorial_id}}
+Content-Type: application/json
+
+{
+  "pais": "Chile"
+}
+
+### Editoriales: PATCH con cuerpo vacío no cambia nada
+# esperado: 200
+# contiene: "nombre":"Prueba 03 Editorial"; "pais":"Chile"
+PATCH http://127.0.0.1:8000/editoriales/{{editorial_id}}
+Content-Type: application/json
+
+{}
+
+### Editoriales: el alta no admite id
+# esperado: 422
+# no-contiene: "detail":"Not Found"
+POST http://127.0.0.1:8000/editoriales/
+Content-Type: application/json
+
+{
+  "id": 99,
+  "nombre": "Prueba 03 Editorial Con Id"
+}
+
+### Editoriales: el alta no admite campos desconocidos
+# esperado: 422
+# no-contiene: "detail":"Not Found"
+POST http://127.0.0.1:8000/editoriales/
+Content-Type: application/json
+
+{
+  "nombre": "Prueba 03 Editorial Con Campo",
+  "desconocido": true
+}
+
+### Géneros: alta válida
+# esperado: 201
+# captura: genero_id
+# contiene: "nombre":"Prueba 03 Genero"
+POST http://127.0.0.1:8000/generos/
+Content-Type: application/json
+
+{
+  "nombre": "Prueba 03 Genero"
+}
+
+### Géneros: alta repetida
+# esperado: 409
+# contiene: "detail":"Ya existe un género con ese nombre."
+# no-contiene: 23505; _key; duplicate key; genero_nombre_key; Traceback
+POST http://127.0.0.1:8000/generos/
+Content-Type: application/json
+
+{
+  "nombre": "Prueba 03 Genero"
+}
+
+### Géneros: listado paginado
+# esperado: 200
+# cantidad: 2
+GET http://127.0.0.1:8000/generos/?limit=2&offset=0
+
+### Géneros: sublistado de un género inexistente
+# esperado: 404
+# contiene: "detail":"El género no existe."
+GET http://127.0.0.1:8000/generos/9999/libros
+
+### Géneros: el alta no admite campos desconocidos
+# esperado: 422
+POST http://127.0.0.1:8000/generos/
+Content-Type: application/json
+
+{
+  "nombre": "Prueba 03 Genero Invalido",
+  "campo": "x"
+}
+
+### Autores: alta válida
+# esperado: 201
+# captura: autor_id
+# contiene: "nombre":"Prueba 03 Autor"; "nacionalidad":"Argentina"
+POST http://127.0.0.1:8000/autores/
+Content-Type: application/json
+
+{
+  "nombre": "Prueba 03 Autor",
+  "nacionalidad": "Argentina"
+}
+
+### Autores: alta sin nombre
+# esperado: 422
+POST http://127.0.0.1:8000/autores/
+Content-Type: application/json
+
+{
+  "nacionalidad": "Chile"
+}
+
+### Autores: recurso inexistente
+# esperado: 404
+# contiene: "detail":"El autor no existe."
+GET http://127.0.0.1:8000/autores/9999
+
+### Autores: PATCH de un autor inexistente
+# esperado: 404
+PATCH http://127.0.0.1:8000/autores/9999
+Content-Type: application/json
+
+{
+  "nacionalidad": "Chile"
+}
+
+### Autores: PATCH de un solo campo
+# esperado: 200
+# contiene: "nacionalidad":"Chile"; "nombre":"Prueba 03 Autor"
+PATCH http://127.0.0.1:8000/autores/{{autor_id}}
+Content-Type: application/json
+
+{
+  "nacionalidad": "Chile"
+}
+
+### Autores: sublistado sin libros
+# esperado: 200
+# lista-vacia: si
+GET http://127.0.0.1:8000/autores/{{autor_id}}/libros
+
+### Libros: búsqueda parcial por título
+# esperado: 200
+# cantidad: 1
+# contiene: "titulo":"Rayuela"
+GET http://127.0.0.1:8000/libros/?titulo=ray
+
+### Libros: intento de inyección sin coincidencias
+# esperado: 200
+# lista-vacia: si
+GET http://127.0.0.1:8000/libros/?titulo=%27%20OR%20%271%27%3D%271
+
+### Libros: filtro por género
+# esperado: 200
+# cantidad: 1
+# todos-genero: 1
+GET http://127.0.0.1:8000/libros/?genero_id=1
+
+### Libros: detalle con relaciones
+# esperado: 200
+# contiene: "editorial":{"id":1; "genero":{"id":1; "autores":[; "rol":"autor"; "orden":1
+GET http://127.0.0.1:8000/libros/1
+
+### Libros: PATCH de stock
+# esperado: 200
+# contiene: "stock":11; "precio":"24500.00"
+PATCH http://127.0.0.1:8000/libros/1
+Content-Type: application/json
+
+{
+  "stock": 11
+}
+
+### Libros: precio inválido
+# esperado: 422
+PATCH http://127.0.0.1:8000/libros/1
+Content-Type: application/json
+
+{
+  "precio": 0
+}
+
+### Libros: el alta no existe en este change
+# esperado: 405
+POST http://127.0.0.1:8000/libros/
+Content-Type: application/json
+
+{
+  "isbn": "9780000000001",
+  "titulo": "Prueba 03 Libro"
+}
+
+### Libros: recurso inexistente
+# esperado: 404
+# contiene: "detail":"El libro no existe."
+GET http://127.0.0.1:8000/libros/9999
+
+### Clientes: alta válida sin perfil
+# esperado: 201
+# captura: cliente_id
+# contiene: "email":"prueba03@example.com"; "perfil":null
+POST http://127.0.0.1:8000/clientes/
+Content-Type: application/json
+
+{
+  "nombre": "Prueba 03 Cliente",
+  "email": "prueba03@example.com"
+}
+
+### Clientes: email repetido
+# esperado: 409
+# contiene: "detail":"Ya existe un cliente con ese correo."
+# no-contiene: 23505; _key; duplicate key; cliente_email_key; Traceback
+POST http://127.0.0.1:8000/clientes/
+Content-Type: application/json
+
+{
+  "nombre": "Prueba 03 Cliente Duplicado",
+  "email": "prueba03@example.com"
+}
+
+### Clientes: lectura sin perfil
+# esperado: 200
+# es-null: perfil
+GET http://127.0.0.1:8000/clientes/{{cliente_id}}
+
+### Clientes: alta de perfil
+# esperado: 201
+# contiene: "telefono":"+54 11 5555-0303"; "direccion":"Calle Prueba 03"
+POST http://127.0.0.1:8000/clientes/{{cliente_id}}/perfil
+Content-Type: application/json
+
+{
+  "telefono": "+54 11 5555-0303",
+  "direccion": "Calle Prueba 03"
+}
+
+### Clientes: segundo perfil rechazado
+# esperado: 409
+# contiene: "detail":"El cliente ya tiene un perfil."
+# no-contiene: 23505; _key; duplicate key; perfil_cliente_cliente_id_key; Traceback
+POST http://127.0.0.1:8000/clientes/{{cliente_id}}/perfil
+Content-Type: application/json
+
+{
+  "telefono": "+54 11 5555-0304"
+}
+
+### Clientes: lectura con perfil como objeto
+# esperado: 200
+# contiene: "perfil":{"id":
+GET http://127.0.0.1:8000/clientes/{{cliente_id}}
+
+### Clientes: ventas de un cliente sin ventas
+# esperado: 200
+# lista-vacia: si
+GET http://127.0.0.1:8000/clientes/{{cliente_id}}/ventas
+
+### Clientes: ventas de un cliente inexistente
+# esperado: 404
+# contiene: "detail":"El cliente no existe."
+GET http://127.0.0.1:8000/clientes/9999/ventas
+
+### Clientes: perfil de un cliente inexistente
+# esperado: 404
+POST http://127.0.0.1:8000/clientes/9999/perfil
+Content-Type: application/json
+
+{
+  "telefono": "+54 11 5555-0399"
+}
+
+### Clientes: PATCH parcial conserva el perfil
+# esperado: 200
+# contiene: "nombre":"Prueba 03 Cliente Actualizado"; "perfil":{
+PATCH http://127.0.0.1:8000/clientes/{{cliente_id}}
+Content-Type: application/json
+
+{
+  "nombre": "Prueba 03 Cliente Actualizado"
+}
+
+### Ventas: listado paginado
+# esperado: 200
+# cantidad: 1
+GET http://127.0.0.1:8000/ventas/?limit=1&offset=0
+
+### Ventas: detalle con cliente y renglones
+# esperado: 200
+# contiene: "cliente":{"id":1; "renglones":[; "subtotal":
+GET http://127.0.0.1:8000/ventas/1
+
+### Ventas: recurso inexistente
+# esperado: 404
+# contiene: "detail":"La venta no existe."
+GET http://127.0.0.1:8000/ventas/9999
+
+### Ventas: el alta pertenece al change 04
+# esperado: 405
+POST http://127.0.0.1:8000/ventas/
+Content-Type: application/json
+
+{
+  "cliente_id": 1,
+  "renglones": []
+}
+
+### Ventas: la actualización no está definida
+# esperado: 405
+PATCH http://127.0.0.1:8000/ventas/1
+Content-Type: application/json
+
+{
+  "total": "1.00"
+}
+
+# ---------------------------------------------------------------------------
+# Limpieza de las filas creadas por las pruebas.
+# El change no expone endpoints DELETE, así que se ejecuta con psql:
+#
+# docker exec pg-libreria psql -U libreria -d libreria -c "
+# DELETE FROM renglon_venta WHERE venta_id IN (SELECT id FROM venta WHERE cliente_id IN (SELECT id FROM cliente WHERE nombre LIKE 'Prueba 03%' OR email LIKE 'prueba03%'));
+# DELETE FROM venta WHERE cliente_id IN (SELECT id FROM cliente WHERE nombre LIKE 'Prueba 03%' OR email LIKE 'prueba03%');
+# DELETE FROM perfil_cliente WHERE cliente_id IN (SELECT id FROM cliente WHERE nombre LIKE 'Prueba 03%' OR email LIKE 'prueba03%');
+# DELETE FROM libro_autor WHERE libro_id IN (SELECT id FROM libro WHERE titulo LIKE 'Prueba 03%');
+# DELETE FROM renglon_venta WHERE libro_id IN (SELECT id FROM libro WHERE titulo LIKE 'Prueba 03%');
+# DELETE FROM libro WHERE titulo LIKE 'Prueba 03%';
+# DELETE FROM cliente WHERE nombre LIKE 'Prueba 03%' OR email LIKE 'prueba03%';
+# DELETE FROM autor WHERE nombre LIKE 'Prueba 03%';
+# DELETE FROM genero WHERE nombre LIKE 'Prueba 03%';
+# DELETE FROM editorial WHERE nombre LIKE 'Prueba 03%';
+# "
+# ---------------------------------------------------------------------------

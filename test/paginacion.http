@@ -1,0 +1,175 @@
+# Paginación y búsqueda del change 03.
+#
+# Ejecutar con `uvicorn app.main:app --port 8000` y la base sembrada.
+# Cada bloque declara `# esperado:` y las comprobaciones del ejecutor:
+#   # captura: nombre        guarda el `id` de la respuesta
+#   # contiene: a; b         fragmentos que deben aparecer en el cuerpo
+#   # no-contiene: a; b      fragmentos que no deben aparecer
+#   # cantidad: n            cantidad de elementos de una lista
+#   # maximo: n              cantidad maxima de elementos de una lista
+#   # minimo: n              cantidad minima de elementos de una lista
+#   # lista-vacia: si        el cuerpo debe ser `[]`
+#   # todos-genero: id       todos los elementos deben tener ese `genero.id`
+#   # guarda-lista: nombre   guarda los `id` de una lista
+#   # sin-solape-con: nombre las dos listas no comparten elementos
+#
+# La regla RN-10 se aplica a los ocho listados del change:
+# `/editoriales/`, `/generos/`, `/libros/`, `/ventas/`,
+# `/editoriales/{id}/libros`, `/generos/{id}/libros`, `/autores/{id}/libros`
+# y `/clientes/{id}/ventas`.
+
+### Editoriales: listado sin parámetros
+# esperado: 200
+# maximo: 20
+# minimo: 1
+GET http://127.0.0.1:8000/editoriales/
+
+### Editoriales: primera página de a dos
+# esperado: 200
+# cantidad: 2
+# guarda-lista: editoriales_pagina_1
+GET http://127.0.0.1:8000/editoriales/?limit=2&offset=0
+
+### Editoriales: segunda página de a dos
+# esperado: 200
+# cantidad: 2
+# guarda-lista: editoriales_pagina_2
+# sin-solape-con: editoriales_pagina_1
+GET http://127.0.0.1:8000/editoriales/?limit=2&offset=2
+
+### Editoriales: limit fuera de rango por abajo
+# esperado: 422
+GET http://127.0.0.1:8000/editoriales/?limit=0
+
+### Editoriales: limit fuera de rango por arriba
+# esperado: 422
+GET http://127.0.0.1:8000/editoriales/?limit=101
+
+### Editoriales: offset negativo
+# esperado: 422
+GET http://127.0.0.1:8000/editoriales/?offset=-1
+
+### Editoriales: sublistado paginado
+# esperado: 200
+# cantidad: 1
+# guarda-lista: editorial_libros_pagina_1
+GET http://127.0.0.1:8000/editoriales/2/libros?limit=1&offset=0
+
+### Editoriales: segunda página del sublistado
+# esperado: 200
+# cantidad: 1
+# guarda-lista: editorial_libros_pagina_2
+# sin-solape-con: editorial_libros_pagina_1
+GET http://127.0.0.1:8000/editoriales/2/libros?limit=1&offset=1
+
+### Editoriales: sublistado de una editorial inexistente
+# esperado: 404
+# contiene: "detail":"La editorial no existe."
+GET http://127.0.0.1:8000/editoriales/9999/libros
+
+### Géneros: listado paginado
+# esperado: 200
+# cantidad: 2
+GET http://127.0.0.1:8000/generos/?limit=2&offset=0
+
+### Géneros: limit fuera de rango
+# esperado: 422
+GET http://127.0.0.1:8000/generos/?limit=101
+
+### Géneros: sublistado paginado
+# esperado: 200
+# cantidad: 1
+GET http://127.0.0.1:8000/generos/2/libros?limit=1&offset=0
+
+### Géneros: sublistado de un género inexistente
+# esperado: 404
+# contiene: "detail":"El género no existe."
+GET http://127.0.0.1:8000/generos/9999/libros
+
+### Libros: listado sin parámetros
+# esperado: 200
+# maximo: 20
+# minimo: 1
+GET http://127.0.0.1:8000/libros/
+
+### Libros: primera página de a dos
+# esperado: 200
+# cantidad: 2
+# guarda-lista: libros_pagina_1
+GET http://127.0.0.1:8000/libros/?limit=2&offset=0
+
+### Libros: segunda página de a dos
+# esperado: 200
+# cantidad: 2
+# guarda-lista: libros_pagina_2
+# sin-solape-con: libros_pagina_1
+GET http://127.0.0.1:8000/libros/?limit=2&offset=2
+
+### Libros: limit fuera de rango
+# esperado: 422
+GET http://127.0.0.1:8000/libros/?limit=0
+
+### Libros: offset negativo
+# esperado: 422
+GET http://127.0.0.1:8000/libros/?offset=-1
+
+### Libros: búsqueda parcial por título
+# esperado: 200
+# cantidad: 1
+# contiene: "titulo":"Rayuela"
+GET http://127.0.0.1:8000/libros/?titulo=ray
+
+### Libros: intento de inyección sin coincidencias (C-08)
+# esperado: 200
+# lista-vacia: si
+GET http://127.0.0.1:8000/libros/?titulo=%27%20OR%20%271%27%3D%271
+
+### Libros: filtro por género
+# esperado: 200
+# cantidad: 1
+# todos-genero: 1
+GET http://127.0.0.1:8000/libros/?genero_id=1
+
+### Libros: filtro por género y paginación combinados
+# esperado: 200
+# cantidad: 2
+# todos-genero: 2
+GET http://127.0.0.1:8000/libros/?genero_id=2&limit=2&offset=0
+
+### Autores: sublistado paginado
+# esperado: 200
+# cantidad: 1
+# contiene: "rol":"autor"; "orden":1
+GET http://127.0.0.1:8000/autores/1/libros?limit=1&offset=0
+
+### Autores: sublistado de un autor inexistente
+# esperado: 404
+# contiene: "detail":"El autor no existe."
+GET http://127.0.0.1:8000/autores/9999/libros
+
+### Ventas: primera página de a una
+# esperado: 200
+# cantidad: 1
+# guarda-lista: ventas_pagina_1
+GET http://127.0.0.1:8000/ventas/?limit=1&offset=0
+
+### Ventas: segunda página de a una
+# esperado: 200
+# cantidad: 1
+# guarda-lista: ventas_pagina_2
+# sin-solape-con: ventas_pagina_1
+GET http://127.0.0.1:8000/ventas/?limit=1&offset=1
+
+### Ventas: limit fuera de rango
+# esperado: 422
+GET http://127.0.0.1:8000/ventas/?limit=101
+
+### Clientes: ventas paginadas
+# esperado: 200
+# cantidad: 1
+GET http://127.0.0.1:8000/clientes/1/ventas?limit=1&offset=0
+
+### Clientes: ventas de un cliente inexistente
+# esperado: 404
+# contiene: "detail":"El cliente no existe."
+GET http://127.0.0.1:8000/clientes/9999/ventas

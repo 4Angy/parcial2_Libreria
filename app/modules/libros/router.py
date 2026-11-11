@@ -1,1 +1,49 @@
-"""Rutas de libros. Andamiaje: el change 03 agrega los endpoints."""
+"""Rutas de libros.
+
+No se publica `POST /libros/`: el alta con relaciones pertenece al change `04`.
+El path de colección existe con `GET`, así que un `POST` responde `405`.
+"""
+
+from typing import Annotated, Optional
+
+from fastapi import APIRouter, Depends, Query
+from sqlmodel.ext.asyncio.session import AsyncSession
+
+from app.core.database import get_session
+from app.core.pagination import Paginacion, paginacion
+from app.modules.libros import service
+from app.modules.libros.schemas import LibroRead, LibroResumenRead, LibroUpdate
+
+router = APIRouter(prefix="/libros", tags=["libros"])
+
+
+@router.get("/", response_model=list[LibroResumenRead], summary="Listar libros")
+async def listar_libros(
+    session: Annotated[AsyncSession, Depends(get_session)],
+    pagina: Annotated[Paginacion, Depends(paginacion)],
+    titulo: Annotated[Optional[str], Query()] = None,
+    genero_id: Annotated[Optional[int], Query()] = None,
+) -> list[LibroResumenRead]:
+    """Lista libros con búsqueda parcial por título y filtro por género."""
+    return await service.listar_libros(session, pagina, titulo, genero_id)
+
+
+@router.get("/{id}", response_model=LibroRead, summary="Obtener un libro")
+async def obtener_libro(
+    id: int,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> LibroRead:
+    """Devuelve el detalle con editorial, género y autores."""
+    return await service.obtener_libro(session, id)
+
+
+@router.patch(
+    "/{id}", response_model=LibroRead, summary="Actualizar un libro"
+)
+async def actualizar_libro(
+    id: int,
+    datos: LibroUpdate,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> LibroRead:
+    """Aplica un `PATCH` parcial y devuelve el detalle actualizado."""
+    return await service.actualizar_libro(session, id, datos)

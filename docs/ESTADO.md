@@ -1,7 +1,7 @@
 # Estado del proyecto
 
 **Última actualización:** 11 de noviembre de 2026
-**Change activo:** ninguno — `01-proyecto-lifespan-health` cerrado con 13 de 13 tareas
+**Change activo:** `03-contratos-crud` — implementado y verificado (22 de 22 tareas), pendiente de archivar
 
 ---
 
@@ -26,19 +26,29 @@ La consigna completa está en `docs/Parcial_Cap1a4_Consigna.pdf`.
 | `env.example` sin secretos | ✅ |
 | Change `01` propuesto, diseñado y validado (`--strict`) | ✅ |
 | Change `01` implementado y verificado contra PostgreSQL 16 | ✅ 13/13 tareas |
+| Change `02` propuesto, diseñado y validado (`--strict`) | ✅ |
+| Change `02` implementado y verificado: nueve tablas, restricciones y semilla | ✅ 14/14 tareas |
+| Change `03` propuesto, diseñado y validado (`--strict`) | ✅ |
+| Change `03` implementado y verificado: DTO, CRUD, paginación y errores | ✅ 22/22 tareas |
 
-### Archivos creados
+### Archivos creados (además de los del change 01)
 
 ```
-app/main.py                    lifespan, motor, fábrica de sesiones, create_all
-app/core/config.py             DATABASE_URL y SQL_ECHO, sin valor por defecto
-app/core/database.py           get_session con expire_on_commit=False
-app/core/registry.py           punto único de importación de modelos
-app/modules/health/router.py   GET /health/live y GET /health/ready
-app/modules/{editoriales,generos,autores,libros,clientes,ventas}/
-                               andamiaje: models, schemas, service, router
-requirements.txt               fastapi[standard], sqlmodel, sqlalchemy[asyncio], asyncpg, python-dotenv
-test/health.http               4 casos con resultado esperado
+app/core/pagination.py         Paginacion(limit, offset) y dependencia con Query
+app/core/errors.py             NoEncontrado, Conflicto y confirmar() por SQLSTATE
+app/modules/*/schemas.py       DTO Create/Update/Read separados de las tablas
+app/modules/*/service.py       consultas, escritura y carga anticipada
+app/modules/*/router.py        rutas, códigos y response_model
+scripts/datos_iniciales.py     semilla transaccional e idempotente
+test/modelos_*.sql|py          verificaciones del change 02
+test/contratos.http            altas, lecturas y PATCH parcial
+test/paginacion.http           límites, páginas, C-08 y filtro por género
+test/errores.http              C-01, C-02, C-03 y ausencia de texto interno
+test/lecturas.http             detalle de libro y de venta
+test/serializacion.py          Decimal como cadena, fecha UTC con Z
+test/consultas.py              ILIKE con parámetro ligado y carga anticipada
+test/errores_integridad.py     traducción de IntegrityError
+test/rutas.py                  inventario de las 24 rutas publicadas
 ```
 
 ### Tareas de `01` (13 de 13)
@@ -55,6 +65,28 @@ Las verificaciones más relevantes, todas ejecutadas:
 | `/health/ready` con base | 200 `{"estado":"listo","base":"disponible"}`, `SELECT 1` visible con `SQL_ECHO=true` |
 | `/health/ready` sin base | 503 `{"estado":"no_listo","base":"no_disponible"}`, sin texto interno |
 | Cierre del motor | `pg_stat_activity` pasa de 2 a 1 conexiones al apagar |
+
+### Tareas de `03` (22 de 22)
+
+`1.1`–`1.3`, `2.1`–`2.4`, `3.1`–`3.2`, `4.1`–`4.3`, `5.1`–`5.2`, `6.1`–`6.3`, `7.1`–`7.5`.
+
+Evidencia ejecutada contra la base sembrada y `uvicorn` real:
+
+| Caso | Evidencia |
+|---|---|
+| Inventario de rutas | `test/rutas.py` → `faltan set() sobran set()`, 24 rutas, sin `POST /libros/` ni `POST /ventas/` |
+| Paginación | `limit=0`, `limit=101` y `offset=-1` → 422; `limit=2` con `offset=0` y `offset=2` sin solaparse |
+| C-01 | `/editoriales/abc` → 422 sin ejecutar el handler |
+| C-02 | Editorial y email repetidos → 409 con mensaje propio, sin `23505`, `_key` ni nombre de restricción |
+| C-03 | Segundo perfil del mismo cliente → 409 |
+| C-08 | `titulo=' OR '1'='1` → 200 con lista vacía |
+| Parámetro ligado | `SQL_ECHO=true` muestra `ILIKE $1::VARCHAR` y el patrón en `parameters` |
+| PATCH parcial | `{"pais": "Chile"}` cambia solo `pais`; `{}` responde 200 sin cambios; `{"genero_id": null}` quita el género |
+| Detalle de libro | editorial y género como objetos; autores con `rol` y `orden` |
+| Detalle de venta | cliente como objeto; renglones con `titulo`, `precio_unitario` y `subtotal`; `fecha` termina en `Z`; `total` es cadena |
+| Perfil 1:1 | `GET /clientes/{id}` devuelve `perfil` como objeto o `null`, nunca lista |
+| Alcance diferido | `POST /libros/`, `POST /ventas/` y `PATCH /ventas/{id}` → 405 |
+| Estado final de la base | `7, 5, 10, 9, 4, 4, 2, 4`; sin filas `Prueba 03` |
 
 ---
 
@@ -107,15 +139,16 @@ habilitación**: hay que cerrarlo antes de repetir `dism /online /enable-feature
 
 ## Próximo paso
 
-1. Archivar `01-proyecto-lifespan-health` (sincroniza las tres delta specs a
-   `openspec/specs/`: `project-structure`, `runtime-lifecycle`, `health-checks`).
+1. Archivar `03-contratos-crud` (sincroniza las cuatro delta specs a
+   `openspec/specs/`: `api-contracts`, `crud-endpoints`,
+   `pagination-and-filtering`, `error-handling`).
 
-2. Proponer `02-modelos-relaciones` — 22 % de la nota. Es el change más pesado:
-   nueve tablas (`editorial`, `genero`, `autor`, `libro`, `libro_autor`, `cliente`,
-   `perfil_cliente`, `venta`, `renglon_venta`), restricciones de unicidad y claves
-   foráneas. El dominio sale de la semilla del frontend
-   (`libreria_abc\js\datos-iniciales.js`): 7 editoriales, 5 géneros, 10 autores,
-   9 libros, 4 clientes, 2 ventas.
+2. Proponer `04-altas-con-relaciones` — 17 % de la nota. Cubre
+   `POST /libros/` con la lista `autores[{autor_id, rol, orden}]` y
+   `POST /ventas/` con `renglones[{libro_id, cantidad}]`, RN-04 a RN-07
+   (precio copiado del libro, total calculado por el servidor, al menos un
+   renglón y un libro por venta) y el 409 por clave foránea inexistente sin
+   consultar antes si el id existe.
 
 ### Cómo levantar el entorno en una sesión nueva
 
@@ -136,8 +169,8 @@ Si `.env` no existe: copiarlo de `env.example` y poner la contraseña real.
 | Change | Ejercicio | Peso | Estado |
 |---|---|---|---|
 | `01-proyecto-lifespan-health` | 1 · Proyecto, conexión y ciclo de vida | 8 % | Completo (13/13) |
-| `02-modelos-relaciones` | 2 · Modelos, restricciones y relaciones | 22 % | Pendiente |
-| `03-contratos-crud` | 3 · Contratos y CRUD | 12 % | Pendiente |
+| `02-modelos-relaciones` | 2 · Modelos, restricciones y relaciones | 22 % | Completo (14/14) |
+| `03-contratos-crud` | 3 · Contratos y CRUD | 12 % | Implementado (22/22), pendiente de archivar |
 | `04-altas-con-relaciones` | 4 · Altas con relaciones | 17 % | Pendiente |
 | `05-lecturas-sin-n1` | 5 · Lecturas sin N+1 | 8 % | Pendiente |
 | `06-asincronia-background` | 6 · Asincronía sin bloqueos | 8 % | Pendiente |

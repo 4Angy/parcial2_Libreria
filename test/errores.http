@@ -1,0 +1,158 @@
+# Casos de error del change 03: C-01, C-02, C-03 y ausencias de texto interno.
+#
+# Ejecutar con `uvicorn app.main:app --port 8000` y la base sembrada.
+# Cada bloque declara `# esperado:` y las comprobaciones del ejecutor:
+#   # captura: nombre        guarda el `id` de la respuesta
+#   # contiene: a; b         fragmentos que deben aparecer en el cuerpo
+#   # no-contiene: a; b      fragmentos que no deben aparecer
+#   # es-null: campo         el campo debe ser `null`
+#
+# El archivo es autocontenido: crea sus propias filas con el prefijo
+# `Prueba 03` antes de provocar cada conflicto. El bloque SQL de limpieza
+# está al final del archivo.
+
+### C-01: id no numérico rechazado por el contrato
+# esperado: 422
+# no-contiene: "detail":"Not Found"; Traceback
+GET http://127.0.0.1:8000/editoriales/abc
+
+### C-01: id no numérico en un sublistado
+# esperado: 422
+# no-contiene: "detail":"Not Found"; Traceback
+GET http://127.0.0.1:8000/editoriales/abc/libros
+
+### C-02: alta previa de la editorial
+# esperado: 201
+# captura: editorial_error_id
+# contiene: "nombre":"Prueba 03 Error Editorial"
+POST http://127.0.0.1:8000/editoriales/
+Content-Type: application/json
+
+{
+  "nombre": "Prueba 03 Error Editorial",
+  "pais": "Argentina"
+}
+
+### C-02: editorial repetida
+# esperado: 409
+# contiene: "detail":"Ya existe una editorial con ese nombre."
+# no-contiene: 23505; _key; duplicate key; editorial_nombre_key; Traceback
+POST http://127.0.0.1:8000/editoriales/
+Content-Type: application/json
+
+{
+  "nombre": "Prueba 03 Error Editorial",
+  "pais": "Argentina"
+}
+
+### C-02: alta previa del cliente
+# esperado: 201
+# captura: cliente_error_id
+# contiene: "email":"prueba03-error@example.com"
+POST http://127.0.0.1:8000/clientes/
+Content-Type: application/json
+
+{
+  "nombre": "Prueba 03 Error Cliente",
+  "email": "prueba03-error@example.com"
+}
+
+### C-02: email repetido
+# esperado: 409
+# contiene: "detail":"Ya existe un cliente con ese correo."
+# no-contiene: 23505; _key; duplicate key; cliente_email_key; Traceback
+POST http://127.0.0.1:8000/clientes/
+Content-Type: application/json
+
+{
+  "nombre": "Prueba 03 Error Cliente Duplicado",
+  "email": "prueba03-error@example.com"
+}
+
+### C-03: primer perfil del cliente
+# esperado: 201
+# contiene: "telefono":"+54 11 5555-0321"
+POST http://127.0.0.1:8000/clientes/{{cliente_error_id}}/perfil
+Content-Type: application/json
+
+{
+  "telefono": "+54 11 5555-0321",
+  "direccion": "Calle Error 03"
+}
+
+### C-03: segundo perfil rechazado
+# esperado: 409
+# contiene: "detail":"El cliente ya tiene un perfil."
+# no-contiene: 23505; _key; duplicate key; perfil_cliente_cliente_id_key; Traceback
+POST http://127.0.0.1:8000/clientes/{{cliente_error_id}}/perfil
+Content-Type: application/json
+
+{
+  "telefono": "+54 11 5555-0322"
+}
+
+### C-03: el primer perfil no se modificó
+# esperado: 200
+# contiene: "+54 11 5555-0321"; "Calle Error 03"
+GET http://127.0.0.1:8000/clientes/{{cliente_error_id}}
+
+### 404: editorial inexistente
+# esperado: 404
+# contiene: "detail":"La editorial no existe."
+# no-contiene: 23505; Traceback
+GET http://127.0.0.1:8000/editoriales/9999
+
+### 404: libro inexistente
+# esperado: 404
+# contiene: "detail":"El libro no existe."
+# no-contiene: 23505; Traceback
+GET http://127.0.0.1:8000/libros/9999
+
+### 404: venta inexistente
+# esperado: 404
+# contiene: "detail":"La venta no existe."
+# no-contiene: 23505; Traceback
+GET http://127.0.0.1:8000/ventas/9999
+
+### 404: perfil de un cliente inexistente
+# esperado: 404
+# contiene: "detail":"El cliente no existe."
+# no-contiene: 23505; Traceback
+POST http://127.0.0.1:8000/clientes/9999/perfil
+Content-Type: application/json
+
+{
+  "telefono": "+54 11 5555-0399"
+}
+
+### 409: referencia inexistente en el PATCH de un libro
+# esperado: 409
+# contiene: "detail":"La referencia indicada no existe."
+# no-contiene: 23503; _key; Traceback
+PATCH http://127.0.0.1:8000/libros/1
+Content-Type: application/json
+
+{
+  "editorial_id": 9999
+}
+
+### 409: el libro no se modificó tras el rechazo
+# esperado: 200
+# contiene: "editorial":{"id":1; "titulo":"Cien años de soledad"
+GET http://127.0.0.1:8000/libros/1
+
+### Sesión recuperable: la petición siguiente funciona
+# esperado: 200
+# contiene: "nombre":"Editorial Sudamericana"
+GET http://127.0.0.1:8000/editoriales/1
+
+# ---------------------------------------------------------------------------
+# Limpieza de las filas creadas por las pruebas.
+# El change no expone endpoints DELETE, así que se ejecuta con psql:
+#
+# docker exec pg-libreria psql -U libreria -d libreria -c "
+# DELETE FROM perfil_cliente WHERE cliente_id IN (SELECT id FROM cliente WHERE nombre LIKE 'Prueba 03%' OR email LIKE 'prueba03%');
+# DELETE FROM cliente WHERE nombre LIKE 'Prueba 03%' OR email LIKE 'prueba03%';
+# DELETE FROM editorial WHERE nombre LIKE 'Prueba 03%';
+# "
+# ---------------------------------------------------------------------------

@@ -1,0 +1,103 @@
+# Lecturas con relaciones del change 03.
+#
+# Ejecutar con `uvicorn app.main:app --port 8000` y la base sembrada.
+# Cada bloque declara `# esperado:` y las comprobaciones del ejecutor:
+#   # captura: nombre        guarda el `id` de la respuesta
+#   # contiene: a; b         fragmentos que deben aparecer en el cuerpo
+#   # no-contiene: a; b      fragmentos que no deben aparecer
+#   # es-null: campo         el campo debe ser `null`
+#   # termina-en-z: campo    el campo debe terminar en `Z`
+#
+# El archivo es autocontenido: crea un cliente con el prefijo `Prueba 03`
+# para mostrar `perfil` como `null` y como objeto. Al final restaura el
+# `stock` sembrado del libro 1, que `test/contratos.http` cambia a 11.
+# El bloque SQL de limpieza está al final del archivo.
+
+### Libro: detalle con editorial, género y autores
+# esperado: 200
+# contiene: "editorial":{"id":1; "genero":{"id":1; "autores":[{"autor":{"id":1; "rol":"autor"; "orden":1; "precio":"24500.00"
+GET http://127.0.0.1:8000/libros/1
+
+### Libro: detalle con dos autorías ordenadas
+# esperado: 200
+# contiene: "nombre":"Steven Levitt"; "rol":"autor"; "orden":1; "nombre":"Stephen Dubner"; "rol":"coautor"; "orden":2
+GET http://127.0.0.1:8000/libros/9
+
+### Libro sin género: `genero` nulo
+# esperado: 200
+# es-null: genero
+# contiene: "titulo":"Veinte poemas de amor"
+GET http://127.0.0.1:8000/libros/8
+
+### Venta: detalle con cliente y renglones con subtotal
+# esperado: 200
+# contiene: "cliente":{"id":1; "renglones":[{; "cantidad":1; "subtotal":"21900.00"; "subtotal":"31800.00"; "total":"53700.00"
+# termina-en-z: fecha
+GET http://127.0.0.1:8000/ventas/1
+
+### Venta: la fecha se publica en UTC terminada en Z
+# esperado: 200
+# termina-en-z: fecha
+# contiene: "fecha":"2026-04-02T03:00:00Z"
+GET http://127.0.0.1:8000/ventas/2
+
+### Cliente sin perfil: alta
+# esperado: 201
+# captura: cliente_lectura_id
+# es-null: perfil
+POST http://127.0.0.1:8000/clientes/
+Content-Type: application/json
+
+{
+  "nombre": "Prueba 03 Lectura Cliente",
+  "email": "prueba03-lectura@example.com"
+}
+
+### Cliente sin perfil: lectura con `perfil` nulo
+# esperado: 200
+# es-null: perfil
+# no-contiene: "perfil":[
+GET http://127.0.0.1:8000/clientes/{{cliente_lectura_id}}
+
+### Cliente sin perfil: alta del perfil
+# esperado: 201
+# contiene: "+54 11 5555-0311"; "Calle Lectura 03"
+POST http://127.0.0.1:8000/clientes/{{cliente_lectura_id}}/perfil
+Content-Type: application/json
+
+{
+  "telefono": "+54 11 5555-0311",
+  "direccion": "Calle Lectura 03"
+}
+
+### Cliente con perfil: lectura como objeto
+# esperado: 200
+# contiene: "perfil":{"id":
+# no-contiene: "perfil":[
+GET http://127.0.0.1:8000/clientes/{{cliente_lectura_id}}
+
+### Cliente sembrado: lectura con perfil como objeto
+# esperado: 200
+# contiene: "perfil":{"id":
+# no-contiene: "perfil":[
+GET http://127.0.0.1:8000/clientes/1
+
+### Libro: restaurar el stock sembrado
+# esperado: 200
+# contiene: "stock":10; "precio":"24500.00"
+PATCH http://127.0.0.1:8000/libros/1
+Content-Type: application/json
+
+{
+  "stock": 10
+}
+
+# ---------------------------------------------------------------------------
+# Limpieza de las filas creadas por las pruebas.
+# El change no expone endpoints DELETE, así que se ejecuta con psql:
+#
+# docker exec pg-libreria psql -U libreria -d libreria -c "
+# DELETE FROM perfil_cliente WHERE cliente_id IN (SELECT id FROM cliente WHERE nombre LIKE 'Prueba 03%' OR email LIKE 'prueba03%');
+# DELETE FROM cliente WHERE nombre LIKE 'Prueba 03%' OR email LIKE 'prueba03%';
+# "
+# ---------------------------------------------------------------------------
