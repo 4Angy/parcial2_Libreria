@@ -45,6 +45,8 @@ from app.modules.generos.models import Genero  # noqa: E402
 from app.modules.generos.schemas import GeneroCreate, GeneroRead  # noqa: E402
 from app.modules.libros.models import Libro, LibroAutor  # noqa: E402
 from app.modules.libros.schemas import (  # noqa: E402
+    LibroAutorCreate,
+    LibroCreate,
     LibroDeAutorRead,
     LibroRead,
     LibroResumenRead,
@@ -52,7 +54,9 @@ from app.modules.libros.schemas import (  # noqa: E402
 )
 from app.modules.ventas.models import RenglonVenta, Venta  # noqa: E402
 from app.modules.ventas.schemas import (  # noqa: E402
+    RenglonCreate,
     RenglonRead,
+    VentaCreate,
     VentaRead,
     VentaResumenRead,
 )
@@ -283,6 +287,213 @@ def _ventas() -> None:
     assert directo.subtotal == Decimal("21900.00")
 
 
+def _altas_con_relaciones() -> None:
+    """Matriz de los DTO de alta de libro y de venta, sin tocar la base."""
+    libro = LibroCreate(
+        isbn="978-950-00-0006-6",
+        titulo="Los que aman, odian",
+        precio="21000.00",
+        stock=4,
+        editorial_id=1,
+        genero_id=1,
+        autores=[
+            {"autor_id": 3, "rol": "coautor", "orden": 1},
+            {"autor_id": 4, "rol": "coautor", "orden": 2},
+        ],
+    )
+    assert libro.precio == Decimal("21000.00")
+    assert isinstance(libro.precio, Decimal)
+    assert [autoria.autor_id for autoria in libro.autores] == [3, 4]
+    assert libro.autores[1].orden == 2
+
+    sin_autores = LibroCreate(
+        isbn="978-950-00-0007-3",
+        titulo="Prueba 04 Sin Autores",
+        precio="1000.00",
+        stock=0,
+        editorial_id=1,
+        autores=[],
+    )
+    assert sin_autores.autores == []
+    assert sin_autores.genero_id is None
+
+    assert LibroAutorCreate(
+        autor_id=1, rol="traductor", orden=1
+    ).rol == "traductor"
+
+    _rechaza(
+        lambda: LibroCreate(
+            id=99,
+            isbn="978-950-00-0008-0",
+            titulo="Prueba 04 Con Id",
+            precio="1000.00",
+            stock=1,
+            editorial_id=1,
+            autores=[],
+        ),
+        "LibroCreate con id",
+    )
+    _rechaza(
+        lambda: LibroCreate(
+            isbn="978-950-00-0009-7",
+            titulo="Prueba 04 Con Campo",
+            precio="1000.00",
+            stock=1,
+            editorial_id=1,
+            autores=[],
+            desconocido=True,
+        ),
+        "LibroCreate con campo desconocido",
+    )
+    _rechaza(
+        lambda: LibroAutorCreate(autor_id=1, rol="autor", orden=1, extra=1),
+        "LibroAutorCreate con campo desconocido",
+    )
+    _rechaza(
+        lambda: LibroCreate(
+            isbn="978-950-00-0010-3",
+            titulo="Prueba 04 Precio",
+            precio="0",
+            stock=1,
+            editorial_id=1,
+            autores=[],
+        ),
+        "LibroCreate con precio 0",
+    )
+    _rechaza(
+        lambda: LibroCreate(
+            isbn="978-950-00-0011-0",
+            titulo="Prueba 04 Stock",
+            precio="1000.00",
+            stock=-1,
+            editorial_id=1,
+            autores=[],
+        ),
+        "LibroCreate con stock negativo",
+    )
+    _rechaza(
+        lambda: LibroAutorCreate(autor_id=1, rol="prologuista", orden=1),
+        "LibroAutorCreate con rol inválido",
+    )
+    _rechaza(
+        lambda: LibroAutorCreate(autor_id=1, rol="autor", orden=0),
+        "LibroAutorCreate con orden 0",
+    )
+    _rechaza(
+        lambda: LibroCreate(
+            isbn="978-950-00-0012-7",
+            titulo="Prueba 04 Autor Repetido",
+            precio="1000.00",
+            stock=1,
+            editorial_id=1,
+            autores=[
+                {"autor_id": 1, "rol": "autor", "orden": 1},
+                {"autor_id": 1, "rol": "coautor", "orden": 2},
+            ],
+        ),
+        "LibroCreate con autor repetido",
+    )
+    _rechaza(
+        lambda: LibroCreate(
+            isbn="978-950-00-0013-4",
+            titulo="Prueba 04 Orden Repetido",
+            precio="1000.00",
+            stock=1,
+            editorial_id=1,
+            autores=[
+                {"autor_id": 1, "rol": "autor", "orden": 1},
+                {"autor_id": 2, "rol": "coautor", "orden": 1},
+            ],
+        ),
+        "LibroCreate con orden repetido",
+    )
+    _rechaza(
+        lambda: LibroCreate(
+            isbn="978-950-00-0014-1",
+            titulo="Prueba 04 Sin Autores Declarados",
+            precio="1000.00",
+            stock=1,
+            editorial_id=1,
+        ),
+        "LibroCreate sin la clave autores",
+    )
+
+    venta = VentaCreate(
+        cliente_id=2,
+        renglones=[
+            {"libro_id": 1, "cantidad": 2},
+            {"libro_id": 4, "cantidad": 1},
+        ],
+    )
+    assert [renglon.libro_id for renglon in venta.renglones] == [1, 4]
+    assert RenglonCreate(libro_id=1, cantidad=1).cantidad == 1
+
+    _rechaza(
+        lambda: VentaCreate(cliente_id=2, renglones=[]),
+        "VentaCreate sin renglones",
+    )
+    _rechaza(
+        lambda: RenglonCreate(libro_id=1, cantidad=0),
+        "RenglonCreate con cantidad 0",
+    )
+    _rechaza(
+        lambda: VentaCreate(
+            cliente_id=2,
+            renglones=[
+                {"libro_id": 1, "cantidad": 1},
+                {"libro_id": 1, "cantidad": 2},
+            ],
+        ),
+        "VentaCreate con libro repetido",
+    )
+    _rechaza(
+        lambda: VentaCreate(
+            cliente_id=2,
+            renglones=[{"libro_id": 1, "cantidad": 1}],
+            desconocido=True,
+        ),
+        "VentaCreate con campo desconocido",
+    )
+    _rechaza(
+        lambda: RenglonCreate(libro_id=1, cantidad=1, extra=1),
+        "RenglonCreate con campo desconocido",
+    )
+    _rechaza(
+        lambda: VentaCreate(
+            cliente_id=2,
+            renglones=[{"libro_id": 1, "cantidad": 1}],
+            total="68900.00",
+        ),
+        "VentaCreate con total",
+    )
+    _rechaza(
+        lambda: RenglonCreate(
+            libro_id=1, cantidad=1, precio_unitario="24500.00"
+        ),
+        "RenglonCreate con precio_unitario",
+    )
+    _rechaza(
+        lambda: RenglonCreate(libro_id=1, cantidad=1, subtotal="24500.00"),
+        "RenglonCreate con subtotal",
+    )
+    _rechaza(
+        lambda: VentaCreate(
+            cliente_id=2,
+            renglones=[{"libro_id": 1, "cantidad": 1}],
+            fecha="2026-10-08T21:14:11Z",
+        ),
+        "VentaCreate con fecha",
+    )
+    _rechaza(
+        lambda: VentaCreate(
+            id=2,
+            cliente_id=2,
+            renglones=[{"libro_id": 1, "cantidad": 1}],
+        ),
+        "VentaCreate con id",
+    )
+
+
 def main() -> None:
     """Ejecuta todas las comprobaciones de contrato."""
     _editoriales()
@@ -291,6 +502,7 @@ def main() -> None:
     _libros()
     _clientes()
     _ventas()
+    _altas_con_relaciones()
 
 
 if __name__ == "__main__":

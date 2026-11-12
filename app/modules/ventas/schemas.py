@@ -1,7 +1,9 @@
 """DTO de ventas y de sus renglones.
 
-La fecha se publica en ISO 8601 UTC terminada en `Z` y los importes como
-cadenas decimales. `RenglonRead` aplana el título del libro y calcula el
+`VentaCreate` recibe el `cliente_id` y los renglones con `libro_id` y
+`cantidad`: el precio, el subtotal, el total y la fecha los produce el
+servidor. La fecha se publica en ISO 8601 UTC terminada en `Z` y los importes
+como cadenas decimales. `RenglonRead` aplana el título del libro y calcula el
 subtotal a partir de la entidad ORM.
 """
 
@@ -28,6 +30,43 @@ def _titulo_del_libro(libro: Any) -> Optional[str]:
     if isinstance(libro, dict):
         return libro.get("titulo")
     return getattr(libro, "titulo", None)
+
+
+class RenglonCreate(BaseModel):
+    """Renglón que viaja en el alta de una venta.
+
+    `cantidad` reproduce el `CHECK` de la base para que un valor no positivo
+    responda `422` sin llegar a la escritura. El precio unitario no se acepta:
+    se copia del libro en el servicio (RN-06).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    libro_id: int
+    cantidad: int = Field(gt=0)
+
+
+class VentaCreate(BaseModel):
+    """Cuerpo del alta de una venta con sus renglones.
+
+    Los renglones son obligatorios y no pueden repetir un libro: las dos
+    reglas de RN-05 se validan en el contrato, antes de tocar la base.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    cliente_id: int
+    renglones: list[RenglonCreate] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _validar_renglones(self) -> "VentaCreate":
+        """Rechaza el mismo libro en dos renglones de la misma venta."""
+        libros = [renglon.libro_id for renglon in self.renglones]
+        if len(libros) != len(set(libros)):
+            raise ValueError(
+                "No se puede repetir un libro en dos renglones de la misma venta."
+            )
+        return self
 
 
 class RenglonRead(BaseModel):

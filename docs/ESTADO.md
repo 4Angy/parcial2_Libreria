@@ -1,7 +1,7 @@
 # Estado del proyecto
 
 **Última actualización:** 11 de noviembre de 2026
-**Change activo:** `04-altas-con-relaciones` — propuesto y validado (14 tareas), pendiente de implementar
+**Change activo:** `04-altas-con-relaciones` — implementado y verificado (14 de 14 tareas), pendiente de archivar
 
 ---
 
@@ -30,6 +30,8 @@ La consigna completa está en `docs/Parcial_Cap1a4_Consigna.pdf`.
 | Change `02` implementado y verificado: nueve tablas, restricciones y semilla | ✅ 14/14 tareas |
 | Change `03` propuesto, diseñado y validado (`--strict`) | ✅ |
 | Change `03` implementado y verificado: DTO, CRUD, paginación y errores | ✅ 22/22 tareas |
+| Change `04` propuesto, diseñado y validado (`--strict`) | ✅ |
+| Change `04` implementado y verificado: altas con relaciones | ✅ 14/14 tareas |
 
 ### Archivos creados (además de los del change 01)
 
@@ -48,7 +50,9 @@ test/lecturas.http             detalle de libro y de venta
 test/serializacion.py          Decimal como cadena, fecha UTC con Z
 test/consultas.py              ILIKE con parámetro ligado y carga anticipada
 test/errores_integridad.py     traducción de IntegrityError
-test/rutas.py                  inventario de las 24 rutas publicadas
+test/rutas.py                  inventario de las 26 rutas publicadas
+test/altas.http                altas de libro y de venta, RN-04 a RN-07 y 422
+test/altas_relaciones.py       precio copiado, total calculado y consultas fijas
 ```
 
 ### Tareas de `01` (13 de 13)
@@ -87,6 +91,29 @@ Evidencia ejecutada contra la base sembrada y `uvicorn` real:
 | Perfil 1:1 | `GET /clientes/{id}` devuelve `perfil` como objeto o `null`, nunca lista |
 | Alcance diferido | `POST /libros/`, `POST /ventas/` y `PATCH /ventas/{id}` → 405 |
 | Estado final de la base | `7, 5, 10, 9, 4, 4, 2, 4`; sin filas `Prueba 03` |
+
+### Tareas de `04` (14 de 14)
+
+`1.1`, `2.1`–`2.3`, `3.1`, `4.1`–`4.4`, `5.1`–`5.5`.
+
+Evidencia ejecutada contra la base sembrada y `uvicorn` real:
+
+| Caso | Evidencia |
+|---|---|
+| Inventario de rutas | `test/rutas.py` → `faltan set() sobran set()`, 26 rutas, con `POST /libros/` y `POST /ventas/` |
+| Alta de libro | `POST /libros/` con autorías → 201 con `id` de la base, `precio` como cadena, editorial y género como objetos, autores con `rol` y `orden` |
+| Variantes del alta | `autores: []` → 201; `genero_id: null` → 201 con `genero: null`; ISBN repetido → 409 con mensaje propio |
+| C-04 | Editorial, género y autor inexistentes → 409 «La referencia indicada no existe.», sin filas residuales |
+| C-05 | Cliente inexistente → 409; libro inexistente → 409 «El libro indicado no existe.» |
+| C-06 | Venta con dos renglones → 201, `precio_unitario` copiado de cada libro, `subtotal` y `total` calculados (`68900.00` con la semilla actual) |
+| RN-06 | `UPDATE` del precio del libro después de la venta: el `precio_unitario` y el `total` guardados no cambian |
+| RN-04/RN-05 | `renglones: []`, `libro_id` repetido, `cantidad=0`, `total` o `precio_unitario` en el cuerpo → 422 |
+| Contrato del alta | `precio=0`, `stock=-1`, `rol` inválido, `orden=0`, `id` o campo extra en el cuerpo → 422 |
+| Consultas del alta | 3 `SELECT` fijos (libros `IN`, venta y renglones), ningún `SELECT` por renglón y ninguno después de la lectura final |
+| RN-08 | `PATCH /ventas/{id}` → 405 |
+| Estado final de la base | `7, 5, 10, 9, 4, 4, 2, 4` (`libro_autor` en 10); sin filas `Prueba 04` ni `Verif 04` |
+
+**Nota sobre el ejemplo de la consigna.** La consigna muestra una venta con «Rayuela» a `25000.00` y «Respiración artificial» a `27000.00` (total `77000.00`). La semilla del proyecto viene del frontend (`libreria_abc/js/datos-iniciales.js`): libro 1 = «Cien años de soledad» a `24500.00` y libro 4 = «El nombre de la rosa» a `19900.00`, así que el mismo cuerpo da `68900.00`. Se decidió mantener la semilla y verificar la **forma** de la respuesta y la **regla** de cálculo contra los precios reales de la base.
 
 ---
 
@@ -139,20 +166,18 @@ habilitación**: hay que cerrarlo antes de repetir `dism /online /enable-feature
 
 ## Próximo paso
 
-1. Implementar `04-altas-con-relaciones` — 17 % de la nota, 14 tareas. Cubre
-   `POST /libros/` con la lista `autores[{autor_id, rol, orden}]` y
-   `POST /ventas/` con `renglones[{libro_id, cantidad}]`, RN-04 a RN-07
-   (precio copiado del libro, total calculado por el servidor, al menos un
-   renglón y un libro por venta) y el 409 por clave foránea inexistente sin
-   consultar antes si el id existe.
+1. Archivar `04-altas-con-relaciones` (crea `nested-write-contracts` y
+   `sale-registration`, y fusiona los deltas de `crud-endpoints` y
+   `error-handling`).
 
-2. Archivar `04` cuando la implementación esté verificada (crea
-   `nested-write-contracts` y `sale-registration`, y fusiona los deltas de
-   `crud-endpoints` y `error-handling`).
-
-3. Proponer `05-lecturas-sin-n1` — 8 % de la nota. Fija como criterio el
+2. Proponer `05-lecturas-sin-n1` — 8 % de la nota. Fija como criterio el
    número constante de consultas del detalle de libro y de venta (caso C-07)
    sobre lo que ya dejaron implementado `03` y `04`.
+
+3. Continuar con `06-asincronia-background` (8 %), `07-imagen-docker` (15 %)
+   y `08-despliegue-vps` (10 %). Para `07`/`08` faltan datos del grupo:
+   nombre del grupo, acceso al VPS, credenciales de la base de la cátedra y
+   puerto asignado.
 
 ### Cómo levantar el entorno en una sesión nueva
 
@@ -175,7 +200,7 @@ Si `.env` no existe: copiarlo de `env.example` y poner la contraseña real.
 | `01-proyecto-lifespan-health` | 1 · Proyecto, conexión y ciclo de vida | 8 % | Completo (13/13) |
 | `02-modelos-relaciones` | 2 · Modelos, restricciones y relaciones | 22 % | Completo (14/14) |
 | `03-contratos-crud` | 3 · Contratos y CRUD | 12 % | Completo (22/22), archivado |
-| `04-altas-con-relaciones` | 4 · Altas con relaciones | 17 % | Propuesto y validado (14 tareas) |
+| `04-altas-con-relaciones` | 4 · Altas con relaciones | 17 % | Implementado (14/14), pendiente de archivar |
 | `05-lecturas-sin-n1` | 5 · Lecturas sin N+1 | 8 % | Pendiente |
 | `06-asincronia-background` | 6 · Asincronía sin bloqueos | 8 % | Pendiente |
 | `07-imagen-docker` | 7 · Contenedor | 15 % | Pendiente |

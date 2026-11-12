@@ -1,9 +1,9 @@
-"""Inventario de rutas del change 03 contra la tabla de endpoints.
+"""Inventario de rutas del change 04 contra la tabla de endpoints.
 
 En FastAPI 0.162.5 los routers incluidos aparecen en `app.routes` como
 `_IncludedRouter` sin `path` ni `methods`, así que el inventario se arma desde
 `app.openapi()["paths"]` (métodos en minúscula). Se comparan las rutas
-publicadas con las 24 de la tabla de referencia y se comprueban las ausencias
+publicadas con las 26 de la tabla de referencia y se comprueban las ausencias
 deliberadas del change.
 """
 
@@ -33,6 +33,7 @@ REQUERIDAS = {
     ("patch", "/autores/{id}"),
     ("get", "/autores/{id}/libros"),
     ("get", "/libros/"),
+    ("post", "/libros/"),
     ("get", "/libros/{id}"),
     ("patch", "/libros/{id}"),
     ("post", "/clientes/"),
@@ -41,12 +42,11 @@ REQUERIDAS = {
     ("post", "/clientes/{id}/perfil"),
     ("get", "/clientes/{id}/ventas"),
     ("get", "/ventas/"),
+    ("post", "/ventas/"),
     ("get", "/ventas/{id}"),
 }
 
 AUSENTES = {
-    ("post", "/libros/"),
-    ("post", "/ventas/"),
     ("patch", "/ventas/{id}"),
     ("patch", "/generos/{id}"),
     ("get", "/autores/"),
@@ -63,7 +63,7 @@ faltan = REQUERIDAS - publicadas
 sobran = publicadas - REQUERIDAS
 print(f"faltan {faltan} sobran {sobran}")
 
-assert len(REQUERIDAS) == 24, f"la tabla de referencia tiene 24 rutas, no {len(REQUERIDAS)}"
+assert len(REQUERIDAS) == 26, f"la tabla de referencia tiene 26 rutas, no {len(REQUERIDAS)}"
 assert not faltan, f"faltan rutas requeridas: {sorted(faltan)}"
 assert not sobran, f"sobran rutas no previstas: {sorted(sobran)}"
 

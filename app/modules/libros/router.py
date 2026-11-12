@@ -1,7 +1,7 @@
 """Rutas de libros.
 
-No se publica `POST /libros/`: el alta con relaciones pertenece al change `04`.
-El path de colección existe con `GET`, así que un `POST` responde `405`.
+El alta recibe `LibroCreate` con los ids de la editorial, del género y de los
+autores que ya existen. El resto de las rutas mantiene el contrato del `03`.
 """
 
 from typing import Annotated, Optional
@@ -12,9 +12,25 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.core.database import get_session
 from app.core.pagination import Paginacion, paginacion
 from app.modules.libros import service
-from app.modules.libros.schemas import LibroRead, LibroResumenRead, LibroUpdate
+from app.modules.libros.schemas import (
+    LibroCreate,
+    LibroRead,
+    LibroResumenRead,
+    LibroUpdate,
+)
 
 router = APIRouter(prefix="/libros", tags=["libros"])
+
+
+@router.post(
+    "/", response_model=LibroRead, status_code=201, summary="Crear un libro"
+)
+async def crear_libro(
+    datos: LibroCreate,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> LibroRead:
+    """Registra el libro con sus autorías y devuelve el detalle."""
+    return await service.crear_libro(session, datos)
 
 
 @router.get("/", response_model=list[LibroResumenRead], summary="Listar libros")

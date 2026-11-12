@@ -1,14 +1,15 @@
 """DTO de libros.
 
-No se define `LibroCreate`: el alta de libros pertenece al change `04`. El
-detalle aplana la autoría como una lista de `LibroAutorRead` y el listado usa
+`LibroCreate` recibe los ids de la editorial, del género y de los autores que
+ya existen, más los datos propios de cada autoría (`rol` y `orden`). El detalle
+aplana la autoría como una lista de `LibroAutorRead` y el listado usa
 `LibroResumenRead` para no cargar relaciones que no expone.
 """
 
 from decimal import Decimal
-from typing import Optional
+from typing import Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.modules.autores.schemas import AutorRef
 from app.modules.editoriales.schemas import EditorialRef
@@ -31,6 +32,53 @@ class LibroUpdate(BaseModel):
     stock: Optional[int] = Field(default=None, ge=0)
     editorial_id: Optional[int] = None
     genero_id: Optional[int] = None
+
+
+class LibroAutorCreate(BaseModel):
+    """Autoría que viaja en el alta de un libro.
+
+    Solo lleva el `autor_id`: el autor ya existe y su clave foránea es la que
+    rechaza una referencia inexistente. El `rol` reproduce el `CHECK` de la
+    base y el `orden` es la posición de la autoría en la tapa.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    autor_id: int
+    rol: Literal["autor", "coautor", "traductor", "ilustrador"]
+    orden: int = Field(ge=1)
+
+
+class LibroCreate(BaseModel):
+    """Cuerpo del alta de un libro con sus autorías.
+
+    `autores` es obligatorio pero acepta la lista vacía: la consigna no exige
+    al menos un autor. Las autorías se validan antes de tocar la base para que
+    un `autor_id` o un `orden` repetido responda `422` y no un `409` confuso.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    isbn: str
+    titulo: str
+    precio: Decimal = Field(gt=0)
+    stock: int = Field(ge=0)
+    editorial_id: int
+    genero_id: Optional[int] = None
+    autores: list[LibroAutorCreate]
+
+    @model_validator(mode="after")
+    def _validar_autorias(self) -> "LibroCreate":
+        """Rechaza un autor o un orden repetido dentro de la misma alta."""
+        autores = [autoria.autor_id for autoria in self.autores]
+        if len(autores) != len(set(autores)):
+            raise ValueError("No se puede repetir un autor en la misma alta.")
+        ordenes = [autoria.orden for autoria in self.autores]
+        if len(ordenes) != len(set(ordenes)):
+            raise ValueError(
+                "No se puede repetir el orden de una autoría en la misma alta."
+            )
+        return self
 
 
 class LibroResumenRead(BaseModel):

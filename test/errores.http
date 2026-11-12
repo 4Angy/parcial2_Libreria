@@ -1,4 +1,5 @@
-# Casos de error del change 03: C-01, C-02, C-03 y ausencias de texto interno.
+# Casos de error de los changes 03 y 04: C-01, C-02, C-03, C-04, C-05 y
+# ausencias de texto interno.
 #
 # Ejecutar con `uvicorn app.main:app --port 8000` y la base sembrada.
 # Cada bloque declara `# esperado:` y las comprobaciones del ejecutor:
@@ -139,6 +140,110 @@ Content-Type: application/json
 ### 409: el libro no se modificó tras el rechazo
 # esperado: 200
 # contiene: "editorial":{"id":1; "titulo":"Cien años de soledad"
+GET http://127.0.0.1:8000/libros/1
+
+### C-04: libro con editorial inexistente
+# esperado: 409
+# contiene: "detail":"La referencia indicada no existe."
+# no-contiene: 23503; 23505; _key; Traceback
+POST http://127.0.0.1:8000/libros/
+Content-Type: application/json
+
+{
+  "isbn": "978-950-04-9001-9",
+  "titulo": "Prueba 04 Error Editorial",
+  "precio": "1000.00",
+  "stock": 1,
+  "editorial_id": 9999,
+  "autores": []
+}
+
+### C-04: la editorial inexistente no deja filas
+# esperado: 200
+# lista-vacia: si
+GET http://127.0.0.1:8000/libros/?titulo=Prueba%2004%20Error%20Editorial
+
+### C-04: libro con autor inexistente
+# esperado: 409
+# contiene: "detail":"La referencia indicada no existe."
+# no-contiene: 23503; 23505; _key; Traceback
+POST http://127.0.0.1:8000/libros/
+Content-Type: application/json
+
+{
+  "isbn": "978-950-04-9002-6",
+  "titulo": "Prueba 04 Error Autor",
+  "precio": "1000.00",
+  "stock": 1,
+  "editorial_id": 1,
+  "autores": [
+    { "autor_id": 9999, "rol": "autor", "orden": 1 }
+  ]
+}
+
+### C-04: el autor inexistente no deja filas
+# esperado: 200
+# lista-vacia: si
+GET http://127.0.0.1:8000/libros/?titulo=Prueba%2004%20Error%20Autor
+
+### C-04: libro con género inexistente
+# esperado: 409
+# contiene: "detail":"La referencia indicada no existe."
+# no-contiene: 23503; 23505; _key; Traceback
+POST http://127.0.0.1:8000/libros/
+Content-Type: application/json
+
+{
+  "isbn": "978-950-04-9003-3",
+  "titulo": "Prueba 04 Error Genero",
+  "precio": "1000.00",
+  "stock": 1,
+  "editorial_id": 1,
+  "genero_id": 9999,
+  "autores": []
+}
+
+### C-04: el género inexistente no deja filas
+# esperado: 200
+# lista-vacia: si
+GET http://127.0.0.1:8000/libros/?titulo=Prueba%2004%20Error%20Genero
+
+### C-05: venta con cliente inexistente
+# esperado: 409
+# contiene: "detail":"La referencia indicada no existe."
+# no-contiene: 23503; 23505; _key; Traceback
+POST http://127.0.0.1:8000/ventas/
+Content-Type: application/json
+
+{
+  "cliente_id": 9999,
+  "renglones": [
+    { "libro_id": 1, "cantidad": 1 }
+  ]
+}
+
+### C-05: el rechazo no corta la sesión
+# esperado: 200
+# contiene: "titulo":"Cien años de soledad"
+GET http://127.0.0.1:8000/libros/1
+
+### C-05: venta con libro inexistente
+# esperado: 409
+# contiene: "detail":"El libro indicado no existe."
+# no-contiene: 23503; 23505; _key; Traceback
+POST http://127.0.0.1:8000/ventas/
+Content-Type: application/json
+
+{
+  "cliente_id": 2,
+  "renglones": [
+    { "libro_id": 9999, "cantidad": 1 }
+  ]
+}
+
+### C-05: el rechazo no corta la sesión
+# esperado: 200
+# contiene: "titulo":"Cien años de soledad"
 GET http://127.0.0.1:8000/libros/1
 
 ### Sesión recuperable: la petición siguiente funciona

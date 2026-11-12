@@ -1,4 +1,4 @@
-# Contratos HTTP del change 03.
+# Contratos HTTP de los changes 03 y 04.
 #
 # Ejecutar con `uvicorn app.main:app --port 8000` y la base sembrada.
 # Cada bloque declara `# esperado:` y las comprobaciones que hace el ejecutor:
@@ -13,8 +13,8 @@
 #   # guarda-lista: nombre   guarda los `id` de una lista
 #   # sin-solape-con: nombre las dos listas no comparten elementos
 #
-# Los datos creados usan el prefijo `Prueba 03`. El bloque SQL de limpieza
-# está al final del archivo.
+# Los datos creados usan el prefijo `Prueba 03` o `Prueba 04`. El bloque SQL de
+# limpieza está al final del archivo.
 
 ### Salud: el proceso sigue vivo
 # esperado: 200
@@ -233,15 +233,51 @@ Content-Type: application/json
   "precio": 0
 }
 
-### Libros: el alta no existe en este change
-# esperado: 405
+### Libros: alta con autorías
+# esperado: 201
+# captura: libro_04_id
+# contiene: "titulo":"Prueba 04 Libro Contratos"; "precio":"21000.00"; "editorial":{"id":1; "genero":{"id":1; "autores":[; "rol":"coautor"; "orden":1; "orden":2
+# no-contiene: 23505; _key; Traceback
 POST http://127.0.0.1:8000/libros/
 Content-Type: application/json
 
 {
-  "isbn": "9780000000001",
-  "titulo": "Prueba 03 Libro"
+  "isbn": "978-950-04-0100-4",
+  "titulo": "Prueba 04 Libro Contratos",
+  "precio": "21000.00",
+  "stock": 4,
+  "editorial_id": 1,
+  "genero_id": 1,
+  "autores": [
+    { "autor_id": 3, "rol": "coautor", "orden": 1 },
+    { "autor_id": 4, "rol": "coautor", "orden": 2 }
+  ]
 }
+
+### Libros: ISBN repetido en el alta
+# esperado: 409
+# contiene: "detail":"El ISBN ya pertenece a otro libro."
+# no-contiene: 23505; _key; duplicate key; Traceback
+POST http://127.0.0.1:8000/libros/
+Content-Type: application/json
+
+{
+  "isbn": "978-950-04-0100-4",
+  "titulo": "Prueba 04 Libro Contratos",
+  "precio": "21000.00",
+  "stock": 4,
+  "editorial_id": 1,
+  "genero_id": 1,
+  "autores": [
+    { "autor_id": 3, "rol": "coautor", "orden": 1 },
+    { "autor_id": 4, "rol": "coautor", "orden": 2 }
+  ]
+}
+
+### Libros: lectura del alta con relaciones
+# esperado: 200
+# contiene: "titulo":"Prueba 04 Libro Contratos"; "editorial":{"id":1; "genero":{"id":1; "autores":[
+GET http://127.0.0.1:8000/libros/{{libro_04_id}}
 
 ### Libros: recurso inexistente
 # esperado: 404
@@ -348,15 +384,39 @@ GET http://127.0.0.1:8000/ventas/1
 # contiene: "detail":"La venta no existe."
 GET http://127.0.0.1:8000/ventas/9999
 
-### Ventas: el alta pertenece al change 04
-# esperado: 405
+### Ventas: alta previa del cliente Prueba 04
+# esperado: 201
+# captura: cliente_venta_04_id
+# contiene: "email":"prueba04-venta@example.com"; "perfil":null
+POST http://127.0.0.1:8000/clientes/
+Content-Type: application/json
+
+{
+  "nombre": "Prueba 04 Cliente Venta",
+  "email": "prueba04-venta@example.com"
+}
+
+### Ventas: alta válida con dos renglones
+# esperado: 201
+# captura: venta_04_id
+# contiene: "total":"68900.00"; "cliente":{"id":; "renglones":[{; "precio_unitario":"24500.00"; "subtotal":"49000.00"; "precio_unitario":"19900.00"; "subtotal":"19900.00"
+# termina-en-z: fecha
+# no-contiene: 23503; _key; Traceback
 POST http://127.0.0.1:8000/ventas/
 Content-Type: application/json
 
 {
-  "cliente_id": 1,
-  "renglones": []
+  "cliente_id": {{cliente_venta_04_id}},
+  "renglones": [
+    { "libro_id": 1, "cantidad": 2 },
+    { "libro_id": 4, "cantidad": 1 }
+  ]
 }
+
+### Ventas: el detalle coincide con el alta
+# esperado: 200
+# contiene: "total":"68900.00"; "renglones":[
+GET http://127.0.0.1:8000/ventas/{{venta_04_id}}
 
 ### Ventas: la actualización no está definida
 # esperado: 405
@@ -372,13 +432,13 @@ Content-Type: application/json
 # El change no expone endpoints DELETE, así que se ejecuta con psql:
 #
 # docker exec pg-libreria psql -U libreria -d libreria -c "
-# DELETE FROM renglon_venta WHERE venta_id IN (SELECT id FROM venta WHERE cliente_id IN (SELECT id FROM cliente WHERE nombre LIKE 'Prueba 03%' OR email LIKE 'prueba03%'));
-# DELETE FROM venta WHERE cliente_id IN (SELECT id FROM cliente WHERE nombre LIKE 'Prueba 03%' OR email LIKE 'prueba03%');
-# DELETE FROM perfil_cliente WHERE cliente_id IN (SELECT id FROM cliente WHERE nombre LIKE 'Prueba 03%' OR email LIKE 'prueba03%');
-# DELETE FROM libro_autor WHERE libro_id IN (SELECT id FROM libro WHERE titulo LIKE 'Prueba 03%');
-# DELETE FROM renglon_venta WHERE libro_id IN (SELECT id FROM libro WHERE titulo LIKE 'Prueba 03%');
-# DELETE FROM libro WHERE titulo LIKE 'Prueba 03%';
-# DELETE FROM cliente WHERE nombre LIKE 'Prueba 03%' OR email LIKE 'prueba03%';
+# DELETE FROM renglon_venta WHERE venta_id IN (SELECT id FROM venta WHERE cliente_id IN (SELECT id FROM cliente WHERE nombre LIKE 'Prueba 03%' OR email LIKE 'prueba03%' OR nombre LIKE 'Prueba 04%' OR email LIKE 'prueba04%'));
+# DELETE FROM venta WHERE cliente_id IN (SELECT id FROM cliente WHERE nombre LIKE 'Prueba 03%' OR email LIKE 'prueba03%' OR nombre LIKE 'Prueba 04%' OR email LIKE 'prueba04%');
+# DELETE FROM perfil_cliente WHERE cliente_id IN (SELECT id FROM cliente WHERE nombre LIKE 'Prueba 03%' OR email LIKE 'prueba03%' OR nombre LIKE 'Prueba 04%' OR email LIKE 'prueba04%');
+# DELETE FROM libro_autor WHERE libro_id IN (SELECT id FROM libro WHERE titulo LIKE 'Prueba 03%' OR titulo LIKE 'Prueba 04%' OR isbn = '978-950-04-0100-4');
+# DELETE FROM renglon_venta WHERE libro_id IN (SELECT id FROM libro WHERE titulo LIKE 'Prueba 03%' OR titulo LIKE 'Prueba 04%' OR isbn = '978-950-04-0100-4');
+# DELETE FROM libro WHERE titulo LIKE 'Prueba 03%' OR titulo LIKE 'Prueba 04%' OR isbn = '978-950-04-0100-4';
+# DELETE FROM cliente WHERE nombre LIKE 'Prueba 03%' OR email LIKE 'prueba03%' OR nombre LIKE 'Prueba 04%' OR email LIKE 'prueba04%';
 # DELETE FROM autor WHERE nombre LIKE 'Prueba 03%';
 # DELETE FROM genero WHERE nombre LIKE 'Prueba 03%';
 # DELETE FROM editorial WHERE nombre LIKE 'Prueba 03%';

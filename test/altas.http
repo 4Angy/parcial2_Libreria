@@ -1,0 +1,383 @@
+# Altas con relaciones del change 04: libros con autorías y ventas con renglones.
+#
+# Ejecutar con `uvicorn app.main:app --port 8000` y la base sembrada.
+# Cada bloque declara `# esperado:` y las comprobaciones del ejecutor:
+#   # captura: nombre        guarda el `id` de la respuesta y `{{nombre}}` lo reutiliza
+#   # contiene: a; b         fragmentos que deben aparecer en el cuerpo
+#   # no-contiene: a; b      fragmentos que no deben aparecer
+#   # cantidad: n            cantidad de elementos de una lista
+#   # lista-vacia: si        el cuerpo debe ser `[]`
+#   # es-null: campo         el campo debe ser `null`
+#   # termina-en-z: campo    el campo debe terminar en `Z`
+#
+# Los libros de prueba usan el prefijo `Prueba 04` o un ISBN propio del archivo.
+# La venta literal de la consigna usa el cliente sembrado 2 y se limpia por el
+# `id` que devuelve el alta. El bloque SQL de limpieza está al final.
+
+### Libros: alta literal de la consigna
+# esperado: 201
+# captura: libro_consigna_id
+# contiene: "titulo":"Los que aman, odian"; "precio":"21000.00"; "stock":4; "editorial":{"id":1; "genero":{"id":1; "autores":[; "rol":"coautor"; "orden":1; "orden":2
+# no-contiene: 23505; _key; Traceback
+POST http://127.0.0.1:8000/libros/
+Content-Type: application/json
+
+{
+  "isbn": "978-950-00-0006-6",
+  "titulo": "Los que aman, odian",
+  "precio": "21000.00",
+  "stock": 4,
+  "editorial_id": 1,
+  "genero_id": 1,
+  "autores": [
+    { "autor_id": 3, "rol": "coautor", "orden": 1 },
+    { "autor_id": 4, "rol": "coautor", "orden": 2 }
+  ]
+}
+
+### Libros: alta con lista de autores vacía
+# esperado: 201
+# captura: libro_sin_autores_id
+# contiene: "titulo":"Prueba 04 Libro Sin Autores"; "autores":[]
+POST http://127.0.0.1:8000/libros/
+Content-Type: application/json
+
+{
+  "isbn": "978-950-04-0001-1",
+  "titulo": "Prueba 04 Libro Sin Autores",
+  "precio": "12000.00",
+  "stock": 2,
+  "editorial_id": 2,
+  "genero_id": 2,
+  "autores": []
+}
+
+### Libros: alta con género nulo
+# esperado: 201
+# captura: libro_sin_genero_id
+# es-null: genero
+# contiene: "titulo":"Prueba 04 Libro Sin Genero"; "autores":[
+POST http://127.0.0.1:8000/libros/
+Content-Type: application/json
+
+{
+  "isbn": "978-950-04-0002-8",
+  "titulo": "Prueba 04 Libro Sin Genero",
+  "precio": "13000.00",
+  "stock": 0,
+  "editorial_id": 2,
+  "genero_id": null,
+  "autores": [
+    { "autor_id": 5, "rol": "autor", "orden": 1 }
+  ]
+}
+
+### Libros: ISBN repetido
+# esperado: 409
+# contiene: "detail":"El ISBN ya pertenece a otro libro."
+# no-contiene: 23505; _key; duplicate key; Traceback
+POST http://127.0.0.1:8000/libros/
+Content-Type: application/json
+
+{
+  "isbn": "978-950-00-0006-6",
+  "titulo": "Los que aman, odian",
+  "precio": "21000.00",
+  "stock": 4,
+  "editorial_id": 1,
+  "genero_id": 1,
+  "autores": [
+    { "autor_id": 3, "rol": "coautor", "orden": 1 },
+    { "autor_id": 4, "rol": "coautor", "orden": 2 }
+  ]
+}
+
+### Libros: precio cero
+# esperado: 422
+# no-contiene: "detail":"Not Found"
+POST http://127.0.0.1:8000/libros/
+Content-Type: application/json
+
+{
+  "isbn": "978-950-04-0003-5",
+  "titulo": "Prueba 04 Precio Cero",
+  "precio": "0",
+  "stock": 1,
+  "editorial_id": 1,
+  "autores": []
+}
+
+### Libros: stock negativo
+# esperado: 422
+POST http://127.0.0.1:8000/libros/
+Content-Type: application/json
+
+{
+  "isbn": "978-950-04-0004-2",
+  "titulo": "Prueba 04 Stock Negativo",
+  "precio": "1000.00",
+  "stock": -1,
+  "editorial_id": 1,
+  "autores": []
+}
+
+### Libros: rol fuera del conjunto permitido
+# esperado: 422
+POST http://127.0.0.1:8000/libros/
+Content-Type: application/json
+
+{
+  "isbn": "978-950-04-0005-9",
+  "titulo": "Prueba 04 Rol Invalido",
+  "precio": "1000.00",
+  "stock": 1,
+  "editorial_id": 1,
+  "autores": [
+    { "autor_id": 1, "rol": "prologuista", "orden": 1 }
+  ]
+}
+
+### Libros: orden menor que uno
+# esperado: 422
+POST http://127.0.0.1:8000/libros/
+Content-Type: application/json
+
+{
+  "isbn": "978-950-04-0006-6",
+  "titulo": "Prueba 04 Orden Cero",
+  "precio": "1000.00",
+  "stock": 1,
+  "editorial_id": 1,
+  "autores": [
+    { "autor_id": 1, "rol": "autor", "orden": 0 }
+  ]
+}
+
+### Libros: id en el cuerpo
+# esperado: 422
+POST http://127.0.0.1:8000/libros/
+Content-Type: application/json
+
+{
+  "id": 99,
+  "isbn": "978-950-04-0007-3",
+  "titulo": "Prueba 04 Con Id",
+  "precio": "1000.00",
+  "stock": 1,
+  "editorial_id": 1,
+  "autores": []
+}
+
+### Libros: campo desconocido en el libro
+# esperado: 422
+POST http://127.0.0.1:8000/libros/
+Content-Type: application/json
+
+{
+  "isbn": "978-950-04-0008-0",
+  "titulo": "Prueba 04 Con Campo",
+  "precio": "1000.00",
+  "stock": 1,
+  "editorial_id": 1,
+  "autores": [],
+  "desconocido": true
+}
+
+### Libros: campo desconocido en una autoría
+# esperado: 422
+POST http://127.0.0.1:8000/libros/
+Content-Type: application/json
+
+{
+  "isbn": "978-950-04-0009-7",
+  "titulo": "Prueba 04 Autoria Con Campo",
+  "precio": "1000.00",
+  "stock": 1,
+  "editorial_id": 1,
+  "autores": [
+    { "autor_id": 1, "rol": "autor", "orden": 1, "desconocido": true }
+  ]
+}
+
+### Libros: autor repetido en la misma alta
+# esperado: 422
+POST http://127.0.0.1:8000/libros/
+Content-Type: application/json
+
+{
+  "isbn": "978-950-04-0010-3",
+  "titulo": "Prueba 04 Autor Repetido",
+  "precio": "1000.00",
+  "stock": 1,
+  "editorial_id": 1,
+  "autores": [
+    { "autor_id": 1, "rol": "autor", "orden": 1 },
+    { "autor_id": 1, "rol": "coautor", "orden": 2 }
+  ]
+}
+
+### Libros: orden repetido en la misma alta
+# esperado: 422
+POST http://127.0.0.1:8000/libros/
+Content-Type: application/json
+
+{
+  "isbn": "978-950-04-0011-0",
+  "titulo": "Prueba 04 Orden Repetido",
+  "precio": "1000.00",
+  "stock": 1,
+  "editorial_id": 1,
+  "autores": [
+    { "autor_id": 1, "rol": "autor", "orden": 1 },
+    { "autor_id": 2, "rol": "coautor", "orden": 1 }
+  ]
+}
+
+### Libros: falta la clave autores
+# esperado: 422
+POST http://127.0.0.1:8000/libros/
+Content-Type: application/json
+
+{
+  "isbn": "978-950-04-0012-7",
+  "titulo": "Prueba 04 Sin Autores Declarados",
+  "precio": "1000.00",
+  "stock": 1,
+  "editorial_id": 1
+}
+
+### Ventas: alta literal de la consigna
+# esperado: 201
+# captura: venta_consigna_id
+# contiene: "total":"68900.00"; "cliente":{"id":2; "renglones":[{; "precio_unitario":"24500.00"; "subtotal":"49000.00"; "precio_unitario":"19900.00"; "subtotal":"19900.00"
+# termina-en-z: fecha
+# no-contiene: 23503; _key; Traceback
+POST http://127.0.0.1:8000/ventas/
+Content-Type: application/json
+
+{
+  "cliente_id": 2,
+  "renglones": [
+    { "libro_id": 1, "cantidad": 2 },
+    { "libro_id": 4, "cantidad": 1 }
+  ]
+}
+
+### Ventas: el detalle coincide con el alta
+# esperado: 200
+# contiene: "total":"68900.00"; "renglones":[
+# termina-en-z: fecha
+GET http://127.0.0.1:8000/ventas/{{venta_consigna_id}}
+
+### Ventas: sin renglones
+# esperado: 422
+POST http://127.0.0.1:8000/ventas/
+Content-Type: application/json
+
+{
+  "cliente_id": 2,
+  "renglones": []
+}
+
+### Ventas: libro repetido en dos renglones
+# esperado: 422
+POST http://127.0.0.1:8000/ventas/
+Content-Type: application/json
+
+{
+  "cliente_id": 2,
+  "renglones": [
+    { "libro_id": 1, "cantidad": 1 },
+    { "libro_id": 1, "cantidad": 2 }
+  ]
+}
+
+### Ventas: cantidad no positiva
+# esperado: 422
+POST http://127.0.0.1:8000/ventas/
+Content-Type: application/json
+
+{
+  "cliente_id": 2,
+  "renglones": [
+    { "libro_id": 1, "cantidad": 0 }
+  ]
+}
+
+### Ventas: total en el cuerpo
+# esperado: 422
+POST http://127.0.0.1:8000/ventas/
+Content-Type: application/json
+
+{
+  "cliente_id": 2,
+  "total": "68900.00",
+  "renglones": [
+    { "libro_id": 1, "cantidad": 1 }
+  ]
+}
+
+### Ventas: precio unitario en un renglón
+# esperado: 422
+POST http://127.0.0.1:8000/ventas/
+Content-Type: application/json
+
+{
+  "cliente_id": 2,
+  "renglones": [
+    { "libro_id": 1, "cantidad": 1, "precio_unitario": "1.00" }
+  ]
+}
+
+### Ventas: cliente inexistente
+# esperado: 409
+# contiene: "detail":"La referencia indicada no existe."
+# no-contiene: 23503; 23505; _key; Traceback
+POST http://127.0.0.1:8000/ventas/
+Content-Type: application/json
+
+{
+  "cliente_id": 9999,
+  "renglones": [
+    { "libro_id": 1, "cantidad": 1 }
+  ]
+}
+
+### Ventas: libro inexistente
+# esperado: 409
+# contiene: "detail":"El libro indicado no existe."
+# no-contiene: 23503; 23505; _key; Traceback
+POST http://127.0.0.1:8000/ventas/
+Content-Type: application/json
+
+{
+  "cliente_id": 2,
+  "renglones": [
+    { "libro_id": 9999, "cantidad": 1 }
+  ]
+}
+
+### Ventas: la actualización no está definida
+# esperado: 405
+PATCH http://127.0.0.1:8000/ventas/{{venta_consigna_id}}
+Content-Type: application/json
+
+{
+  "total": "1.00"
+}
+
+# ---------------------------------------------------------------------------
+# Limpieza de las filas creadas por las pruebas.
+# El change no expone endpoints DELETE, así que se ejecuta con psql. La venta
+# de la consigna usa el cliente sembrado 2: se borra por el `id` que devolvió
+# el alta (`venta_consigna_id`, impreso por el ejecutor).
+#
+# docker exec pg-libreria psql -U libreria -d libreria -c "
+# DELETE FROM renglon_venta WHERE venta_id = <venta_consigna_id>;
+# DELETE FROM venta WHERE id = <venta_consigna_id>;
+# DELETE FROM libro_autor WHERE libro_id IN (SELECT id FROM libro WHERE isbn IN ('978-950-00-0006-6', '978-950-04-0001-1', '978-950-04-0002-8') OR titulo LIKE 'Prueba 04%');
+# DELETE FROM renglon_venta WHERE libro_id IN (SELECT id FROM libro WHERE isbn IN ('978-950-00-0006-6', '978-950-04-0001-1', '978-950-04-0002-8') OR titulo LIKE 'Prueba 04%');
+# DELETE FROM libro WHERE isbn IN ('978-950-00-0006-6', '978-950-04-0001-1', '978-950-04-0002-8') OR titulo LIKE 'Prueba 04%';
+# DELETE FROM cliente WHERE nombre LIKE 'Prueba 04%' OR email LIKE 'prueba04%';
+# "
+# ---------------------------------------------------------------------------

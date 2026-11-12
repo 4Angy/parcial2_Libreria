@@ -2,7 +2,8 @@
 
 La búsqueda por título usa `ilike` y envía el patrón como parámetro ligado.
 Las lecturas cargan editorial, género y autorías de forma anticipada: ninguna
-serialización depende de la carga perezosa.
+serialización depende de la carga perezosa. El alta escribe a ciegas los ids de
+lo que ya existe y deja que la base rechace una referencia inexistente.
 """
 
 from typing import Optional
@@ -15,7 +16,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.core.errors import NoEncontrado, confirmar
 from app.core.pagination import Paginacion
 from app.modules.libros.models import Libro, LibroAutor
-from app.modules.libros.schemas import LibroUpdate
+from app.modules.libros.schemas import LibroCreate, LibroUpdate
 
 _MENSAJE_NO_ENCONTRADO = "El libro no existe."
 _MENSAJE_CONFLICTO = "El ISBN ya pertenece a otro libro."
@@ -90,3 +91,28 @@ async def actualizar_libro(
     session.add(libro)
     await confirmar(session, _MENSAJE_CONFLICTO)
     return await _releer_libro(session, libro_id)
+
+
+async def crear_libro(session: AsyncSession, datos: LibroCreate) -> Libro:
+    """Registra un libro con sus autorías y devuelve el detalle releído.
+
+    No se consulta si la editorial, el género o los autores existen: el alta
+    escribe a ciegas y `confirmar` traduce la violación de clave foránea a
+    `409`. Las autorías se asignan sobre un objeto transitorio, así que la
+    colección está vacía y asignarla no dispara ninguna consulta.
+    """
+    libro = Libro(
+        isbn=datos.isbn,
+        titulo=datos.titulo,
+        precio=datos.precio,
+        stock=datos.stock,
+        editorial_id=datos.editorial_id,
+        genero_id=datos.genero_id,
+    )
+    libro.autorias = [
+        LibroAutor(autor_id=autoria.autor_id, rol=autoria.rol, orden=autoria.orden)
+        for autoria in datos.autores
+    ]
+    session.add(libro)
+    await confirmar(session, _MENSAJE_CONFLICTO)
+    return await _releer_libro(session, libro.id)

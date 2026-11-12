@@ -1,8 +1,8 @@
 """Rutas de ventas.
 
-No se publican `POST /ventas/` ni `PATCH /ventas/{id}`: el alta pertenece al
-change `04` y la tabla de referencia no define actualización. Como el path
-existe con `GET`, esos métodos responden `405`.
+El alta recibe `VentaCreate` con el cliente y los renglones. `PATCH
+/ventas/{id}` sigue sin declararse: como el path existe con `GET`, responde
+`405` (RN-08).
 """
 
 from typing import Annotated
@@ -13,9 +13,20 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from app.core.database import get_session
 from app.core.pagination import Paginacion, paginacion
 from app.modules.ventas import service
-from app.modules.ventas.schemas import VentaRead, VentaResumenRead
+from app.modules.ventas.schemas import VentaCreate, VentaRead, VentaResumenRead
 
 router = APIRouter(prefix="/ventas", tags=["ventas"])
+
+
+@router.post(
+    "/", response_model=VentaRead, status_code=201, summary="Registrar una venta"
+)
+async def crear_venta(
+    datos: VentaCreate,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> VentaRead:
+    """Registra la venta con sus renglones y devuelve el detalle."""
+    return await service.crear_venta(session, datos)
 
 
 @router.get("/", response_model=list[VentaResumenRead], summary="Listar ventas")

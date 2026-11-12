@@ -126,8 +126,10 @@ GET http://127.0.0.1:8000/libros/?titulo=%27%20OR%20%271%27%3D%271
 
 ### Libros: filtro por género
 # esperado: 200
-# cantidad: 1
+# minimo: 1
 # todos-genero: 1
+# El filtro no exige una cantidad exacta: las altas de test/altas.http y
+# test/contratos.http agregan libros al género 1 con el prefijo `Prueba 04`.
 GET http://127.0.0.1:8000/libros/?genero_id=1
 
 ### Libros: filtro por género y paginación combinados
