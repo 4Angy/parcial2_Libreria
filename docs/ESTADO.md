@@ -1,7 +1,7 @@
 # Estado del proyecto
 
 **Última actualización:** 11 de noviembre de 2026
-**Change activo:** ninguno — `04-altas-con-relaciones` archivado; el próximo es `05-lecturas-sin-n1`
+**Change activo:** ninguno — el alcance de esta entrega cierra en `04-altas-con-relaciones`, archivado
 
 ---
 
@@ -164,18 +164,15 @@ habilitación**: hay que cerrarlo antes de repetir `dism /online /enable-feature
 
 ---
 
-## Próximo paso
+## Alcance de la entrega
 
-1. Proponer `05-lecturas-sin-n1` — 8 % de la nota. Fija como criterio el
-   número constante de consultas del detalle de libro y de venta (caso C-07)
-   sobre lo que ya dejaron implementado `03` y `04`: tres consultas fijas en
-   cada detalle, sin `SELECT` durante la serialización y con el orden de las
-   colecciones estabilizado.
+La entrega cubre los ejercicios **1 a 4** de la consigna, cerrados en los
+changes `01` a `04` (todos archivados, con sus specs promovidas a
+`openspec/specs/` y la base sembrada en `7, 5, 10, 9, 10, 4, 4, 2, 4`).
 
-2. Continuar con `06-asincronia-background` (8 %), `07-imagen-docker` (15 %)
-   y `08-despliegue-vps` (10 %). Para `07`/`08` faltan datos del grupo:
-   nombre del grupo, acceso al VPS, credenciales de la base de la cátedra y
-   puerto asignado.
+Los ejercicios `5` a `8` quedan **fuera de este alcance**. No hay changes
+activos ni trabajo pendiente: `openspec list` está vacío y el árbol de Git
+está limpio.
 
 ### Cómo levantar el entorno en una sesión nueva
 
@@ -199,10 +196,10 @@ Si `.env` no existe: copiarlo de `env.example` y poner la contraseña real.
 | `02-modelos-relaciones` | 2 · Modelos, restricciones y relaciones | 22 % | Completo (14/14) |
 | `03-contratos-crud` | 3 · Contratos y CRUD | 12 % | Completo (22/22), archivado |
 | `04-altas-con-relaciones` | 4 · Altas con relaciones | 17 % | Completo (14/14), archivado |
-| `05-lecturas-sin-n1` | 5 · Lecturas sin N+1 | 8 % | Pendiente |
-| `06-asincronia-background` | 6 · Asincronía sin bloqueos | 8 % | Pendiente |
-| `07-imagen-docker` | 7 · Contenedor | 15 % | Pendiente |
-| `08-despliegue-vps` | 8 · Despliegue | 10 % | Pendiente |
+| `05-lecturas-sin-n1` | 5 · Lecturas sin N+1 | 8 % | Fuera de alcance |
+| `06-asincronia-background` | 6 · Asincronía sin bloqueos | 8 % | Fuera de alcance |
+| `07-imagen-docker` | 7 · Contenedor | 15 % | Fuera de alcance |
+| `08-despliegue-vps` | 8 · Despliegue | 10 % | Fuera de alcance |
 
 ---
 
