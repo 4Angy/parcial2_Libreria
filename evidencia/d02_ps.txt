@@ -1,0 +1,2 @@
+CONTAINER ID   IMAGE      COMMAND                  CREATED         STATUS                   PORTS                                         NAMES
+ae0ae4d04b3b   libreria   "uvicorn app.main:apÔÇª"   6 minutes ago   Up 6 minutes (healthy)   0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp   libreria

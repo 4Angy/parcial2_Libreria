@@ -1,0 +1,13 @@
+IMAGE                       ID             DISK USAGE   CONTENT SIZE   EXTRA
+calculadora-api:latest      ea015000292d        266MB         63.2MB   U    
+hello-world:latest          96498ffd522e       25.9kB         9.49kB   U    
+libreria:latest             ac5f5ebe3b30        270MB           63MB   U    
+mysql:latest                c11782aa2a96        1.3GB          290MB   U    
+nginx:alpine                713fc2ebfd92       94.5MB         27.3MB   U    
+nginx:latest                5aca99593157        241MB           66MB   U    
+node:24-alpine              d32cdf619f63        234MB         58.5MB        
+odontologia-api:latest      9197c4d00b07        362MB         89.1MB        
+odontologia-worker:latest   8625d5d1880d        362MB         89.1MB        
+postgres:16                 ca0bd484cb98        642MB          166MB   U    
+postgres:latest             a02db8cac496        650MB          168MB        
+redis:7                     4fa24486b8bc        182MB         48.3MB   U    

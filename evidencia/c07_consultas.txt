@@ -1,0 +1,6 @@
+﻿Sentencia: SELECT libro.id, libro.isbn, libro.titulo, libro.precio, libro.stock, libro.editorial_id, libro.genero_id, editorial_1.id AS id_1, editorial_1.nombre, editorial_1.pais, genero_1.id AS id_2, genero_1.nombre AS nombre_1 
+FROM libro LEFT OUTER JOIN editorial AS editorial_1 ON editorial_1.id = libro.editorial_id LEFT OUTER JOIN genero AS genero_1 ON genero_1.id = libro.genero_id 
+WHERE libro.titulo ILIKE $1::VARCHAR ORDER BY libro.id 
+ LIMIT $2::INTEGER OFFSET $3::INTEGER
+Parßmetros: ("%' OR '1'='1%", 20, 0)
+ok

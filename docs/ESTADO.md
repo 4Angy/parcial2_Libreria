@@ -166,15 +166,18 @@ habilitación**: hay que cerrarlo antes de repetir `dism /online /enable-feature
 
 ## Alcance de la entrega
 
-La entrega cubre los ejercicios **1 a 4** de la consigna, cerrados en los
-changes `01` a `04` (todos archivados, con sus specs promovidas a
-`openspec/specs/` y la base sembrada en `7, 5, 10, 9, 10, 4, 4, 2, 4`).
+La entrega cubre los ejercicios **1 a 8** de la consigna. Los ejercicios `1` a
+`4` quedaron cerrados en los changes `01` a `04` (todos archivados, con sus
+specs promovidas a `openspec/specs/` y la base sembrada en
+`7, 5, 10, 9, 10, 4, 4, 2, 4`). Los ejercicios `5` (lecturas sin N+1), `6`
+(asincronía sin bloqueos) y `7` (contenedor: la imagen) quedaron cubiertos por
+los changes `05`, `06` y `07`, archivados.
 
-El ejercicio `8` queda **fuera de este alcance**. Los ejercicios `5`
-(lecturas sin N+1), `6` (asincronía sin bloqueos) y `7` (contenedor: la imagen)
-quedaron cubiertos por los changes `05`, `06` y `07`, archivados. No hay changes
-activos ni trabajo pendiente: `openspec list` está vacío y el árbol de Git
-está limpio.
+El ejercicio `8` (despliegue) está **completado y en línea**: la aplicación
+corre en un contenedor Docker administrado con EasyPanel sobre un VPS propio y
+se publica en <https://libreria.julietaherrera.me>. El detalle operativo y los
+comandos quedan en `DEPLOY.md`; las capturas de los casos de prueba, en
+`evidencia/`. No hay changes activos: `openspec list` está vacío.
 
 ### Cómo levantar el entorno en una sesión nueva
 
@@ -201,12 +204,16 @@ Si `.env` no existe: copiarlo de `env.example` y poner la contraseña real.
 | `05-lecturas-sin-n1` | 5 · Lecturas sin N+1 | 8 % | Completo (5/5 tareas), archivado |
 | `06-asincronia-background` | 6 · Asincronía sin bloqueos | 8 % | Completo (8/8 tareas), archivado |
 | `07-imagen-docker` | 7 · Contenedor | 15 % | Completo (8/8 tareas), archivado |
-| `08-despliegue-vps` | 8 · Despliegue | 10 % | Fuera de alcance |
+| `08-despliegue-vps` | 8 · Despliegue | 10 % | Completo — en línea en <https://libreria.julietaherrera.me> |
 
 ---
 
 ## Datos que faltan definir
 
-- **Nombre del grupo** — va en el README y en el nombre del `.zip`.
-- **Acceso al VPS** y **credenciales de la base de la cátedra** — necesarios para `08`.
-- **Puerto asignado por la cátedra** — para el `docker run` de `07`.
+- **Nombre del grupo** — opcional, para el nombre del `.zip`.
+- Ya están definidos los integrantes (María de los Ángeles Zalazar y Julieta
+  Cecilia Herrera) y el despliegue del ejercicio `8`.
+
+Resuelto: el despliegue del ejercicio `8` usa un VPS propio con EasyPanel, el
+servicio de base `db_libreria` (PostgreSQL 16) y el dominio
+`libreria.julietaherrera.me`. No se usan credenciales de la cátedra.
