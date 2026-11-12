@@ -35,7 +35,7 @@ La API SHALL exponer las rutas de editoriales, géneros y autores de la tabla de
 
 ### Requirement: Rutas de libros
 
-La API SHALL exponer `GET /libros/`, `GET /libros/{id}` y `PATCH /libros/{id}`, y SHALL NOT exponer `POST /libros/` en este change.
+La API SHALL exponer `GET /libros/`, `GET /libros/{id}`, `PATCH /libros/{id}` y `POST /libros/`, y SHALL NOT exponer `PUT` ni `DELETE` sobre un libro.
 
 #### Scenario: Listado y detalle
 
@@ -53,6 +53,12 @@ La API SHALL exponer `GET /libros/`, `GET /libros/{id}` y `PATCH /libros/{id}`, 
 - **WHEN** se envía `PATCH /libros/{id}` con `precio` menor o igual que cero o con `stock` negativo
 - **THEN** la respuesta es `422`
 - **AND** el libro no se modifica
+
+#### Scenario: Alta de un libro
+
+- **WHEN** se envía `POST /libros/` con un cuerpo que cumple `LibroCreate`
+- **THEN** la respuesta es `201` con el detalle del libro creado
+- **AND** el `id` del libro lo asigna la base
 
 ### Requirement: Rutas de clientes
 
@@ -84,7 +90,7 @@ La API SHALL exponer `POST /clientes/`, `GET /clientes/{id}`, `PATCH /clientes/{
 
 ### Requirement: Rutas de ventas sin modificación
 
-La API SHALL exponer `GET /ventas/` y `GET /ventas/{id}` y SHALL NOT exponer `PATCH /ventas/{id}` ni `POST /ventas/` en este change.
+La API SHALL exponer `GET /ventas/`, `GET /ventas/{id}` y `POST /ventas/`, y SHALL NOT exponer `PATCH /ventas/{id}`.
 
 #### Scenario: Lectura de ventas
 
@@ -97,6 +103,12 @@ La API SHALL exponer `GET /ventas/` y `GET /ventas/{id}` y SHALL NOT exponer `PA
 - **WHEN** se envía `PATCH /ventas/{id}`
 - **THEN** la respuesta es `405`
 - **AND** la venta no se modifica
+
+#### Scenario: Alta de una venta
+
+- **WHEN** se envía `POST /ventas/` con un cuerpo que cumple `VentaCreate`
+- **THEN** la respuesta es `201` con la venta, su cliente y sus renglones
+- **AND** la venta queda registrada con la fecha y el total del servidor
 
 ### Requirement: Códigos de respuesta del CRUD
 
