@@ -34,7 +34,9 @@ class Venta(SQLModel, table=True):
     fecha: datetime = Field(sa_column=Column(DateTime(timezone=True), nullable=False))
     total: Decimal = Field(sa_column=Column(Numeric(12, 2), nullable=False))
 
-    cliente: Optional["Cliente"] = Relationship(back_populates="ventas")
+    cliente: Optional["Cliente"] = Relationship(
+        back_populates="ventas", sa_relationship_kwargs={"lazy": "raise"}
+    )
     # La cascada de la base elimina los renglones con `ON DELETE CASCADE`;
     # `passive_deletes` evita que SQLAlchemy los cargue solo para borrarlos.
     renglones: list["RenglonVenta"] = Relationship(
@@ -42,6 +44,7 @@ class Venta(SQLModel, table=True):
         sa_relationship_kwargs={
             "cascade": "all, delete-orphan",
             "passive_deletes": True,
+            "lazy": "raise",
         },
     )
 
@@ -71,5 +74,9 @@ class RenglonVenta(SQLModel, table=True):
         sa_column=Column(Numeric(10, 2), nullable=False)
     )
 
-    venta: Optional["Venta"] = Relationship(back_populates="renglones")
-    libro: Optional["Libro"] = Relationship(back_populates="renglones")
+    venta: Optional["Venta"] = Relationship(
+        back_populates="renglones", sa_relationship_kwargs={"lazy": "raise"}
+    )
+    libro: Optional["Libro"] = Relationship(
+        back_populates="renglones", sa_relationship_kwargs={"lazy": "raise"}
+    )

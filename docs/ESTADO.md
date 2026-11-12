@@ -170,7 +170,9 @@ La entrega cubre los ejercicios **1 a 4** de la consigna, cerrados en los
 changes `01` a `04` (todos archivados, con sus specs promovidas a
 `openspec/specs/` y la base sembrada en `7, 5, 10, 9, 10, 4, 4, 2, 4`).
 
-Los ejercicios `5` a `8` quedan **fuera de este alcance**. No hay changes
+El ejercicio `8` queda **fuera de este alcance**. Los ejercicios `5`
+(lecturas sin N+1), `6` (asincronía sin bloqueos) y `7` (contenedor: la imagen)
+quedaron cubiertos por los changes `05`, `06` y `07`, archivados. No hay changes
 activos ni trabajo pendiente: `openspec list` está vacío y el árbol de Git
 está limpio.
 
@@ -196,9 +198,9 @@ Si `.env` no existe: copiarlo de `env.example` y poner la contraseña real.
 | `02-modelos-relaciones` | 2 · Modelos, restricciones y relaciones | 22 % | Completo (14/14) |
 | `03-contratos-crud` | 3 · Contratos y CRUD | 12 % | Completo (22/22), archivado |
 | `04-altas-con-relaciones` | 4 · Altas con relaciones | 17 % | Completo (14/14), archivado |
-| `05-lecturas-sin-n1` | 5 · Lecturas sin N+1 | 8 % | Fuera de alcance |
-| `06-asincronia-background` | 6 · Asincronía sin bloqueos | 8 % | Fuera de alcance |
-| `07-imagen-docker` | 7 · Contenedor | 15 % | Fuera de alcance |
+| `05-lecturas-sin-n1` | 5 · Lecturas sin N+1 | 8 % | Completo (5/5 tareas), archivado |
+| `06-asincronia-background` | 6 · Asincronía sin bloqueos | 8 % | Completo (8/8 tareas), archivado |
+| `07-imagen-docker` | 7 · Contenedor | 15 % | Completo (8/8 tareas), archivado |
 | `08-despliegue-vps` | 8 · Despliegue | 10 % | Fuera de alcance |
 
 ---

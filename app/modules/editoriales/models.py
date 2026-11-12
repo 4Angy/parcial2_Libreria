@@ -27,4 +27,6 @@ class Editorial(SQLModel, table=True):
     nombre: str = Field(unique=True)
     pais: Optional[str] = Field(default=None)
 
-    libros: list["Libro"] = Relationship(back_populates="editorial")
+    libros: list["Libro"] = Relationship(
+        back_populates="editorial", sa_relationship_kwargs={"lazy": "raise"}
+    )

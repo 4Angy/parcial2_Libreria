@@ -41,10 +41,18 @@ class Libro(SQLModel, table=True):
     editorial_id: int = Field(foreign_key="editorial.id", index=True)
     genero_id: Optional[int] = Field(default=None, foreign_key="genero.id", index=True)
 
-    editorial: Optional["Editorial"] = Relationship(back_populates="libros")
-    genero: Optional["Genero"] = Relationship(back_populates="libros")
-    autorias: list["LibroAutor"] = Relationship(back_populates="libro")
-    renglones: list["RenglonVenta"] = Relationship(back_populates="libro")
+    editorial: Optional["Editorial"] = Relationship(
+        back_populates="libros", sa_relationship_kwargs={"lazy": "raise"}
+    )
+    genero: Optional["Genero"] = Relationship(
+        back_populates="libros", sa_relationship_kwargs={"lazy": "raise"}
+    )
+    autorias: list["LibroAutor"] = Relationship(
+        back_populates="libro", sa_relationship_kwargs={"lazy": "raise"}
+    )
+    renglones: list["RenglonVenta"] = Relationship(
+        back_populates="libro", sa_relationship_kwargs={"lazy": "raise"}
+    )
 
 
 class LibroAutor(SQLModel, table=True):
@@ -70,5 +78,9 @@ class LibroAutor(SQLModel, table=True):
     rol: str
     orden: int
 
-    libro: Optional["Libro"] = Relationship(back_populates="autorias")
-    autor: Optional["Autor"] = Relationship(back_populates="autorias")
+    libro: Optional["Libro"] = Relationship(
+        back_populates="autorias", sa_relationship_kwargs={"lazy": "raise"}
+    )
+    autor: Optional["Autor"] = Relationship(
+        back_populates="autorias", sa_relationship_kwargs={"lazy": "raise"}
+    )

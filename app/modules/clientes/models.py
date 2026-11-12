@@ -26,9 +26,11 @@ class Cliente(SQLModel, table=True):
     # una colección; `uselist: False` refleja la cardinalidad uno a uno.
     perfil: Optional["PerfilCliente"] = Relationship(
         back_populates="cliente",
-        sa_relationship_kwargs={"uselist": False},
+        sa_relationship_kwargs={"uselist": False, "lazy": "raise"},
     )
-    ventas: list["Venta"] = Relationship(back_populates="cliente")
+    ventas: list["Venta"] = Relationship(
+        back_populates="cliente", sa_relationship_kwargs={"lazy": "raise"}
+    )
 
 
 class PerfilCliente(SQLModel, table=True):
@@ -46,4 +48,6 @@ class PerfilCliente(SQLModel, table=True):
     telefono: Optional[str] = Field(default=None)
     direccion: Optional[str] = Field(default=None)
 
-    cliente: Optional["Cliente"] = Relationship(back_populates="perfil")
+    cliente: Optional["Cliente"] = Relationship(
+        back_populates="perfil", sa_relationship_kwargs={"lazy": "raise"}
+    )

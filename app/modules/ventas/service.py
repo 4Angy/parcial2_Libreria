@@ -6,6 +6,8 @@ sola consulta para copiar el precio, calcula el total en el servidor y relee el
 detalle con `populate_existing` antes de responder.
 """
 
+import asyncio
+import logging
 from datetime import datetime, timezone
 from decimal import Decimal
 
@@ -24,6 +26,8 @@ _MENSAJE_NO_ENCONTRADA = "La venta no existe."
 _MENSAJE_LIBRO_INEXISTENTE = "El libro indicado no existe."
 _MENSAJE_CONFLICTO = "La venta no se pudo registrar."
 _CENTAVOS = Decimal("0.01")
+
+_logger = logging.getLogger(__name__)
 
 
 def _consulta_venta() -> Select:
@@ -113,3 +117,26 @@ async def crear_venta(session: AsyncSession, datos: VentaCreate) -> Venta:
     session.add(venta)
     await confirmar(session, _MENSAJE_CONFLICTO)
     return await _releer_venta(session, venta.id)
+
+
+async def avisar_comprobante(cliente_id: int, venta_id: int) -> None:
+    """Avisa al cliente del comprobante de su venta en segundo plano.
+
+    Corre después de enviar la respuesta del `POST /ventas/`: no bloquea al
+    servidor y no accede a la base, porque la sesión de la petición ya se
+    cerró. Cualquier error se registra y no se propaga, para no afectar a
+    otras tareas agendadas.
+    """
+    try:
+        await asyncio.sleep(0.5)
+        _logger.info(
+            "Comprobante enviado al cliente %s por la venta %s.",
+            cliente_id,
+            venta_id,
+        )
+    except Exception:  # noqa: BLE001
+        _logger.exception(
+            "Falló el aviso del comprobante para la venta %s del cliente %s.",
+            venta_id,
+            cliente_id,
+        )

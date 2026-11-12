@@ -1,0 +1,31 @@
+# Secretos y entorno
+.env
+.env.*
+!.env.example
+
+# Entorno virtual
+.venv
+venv
+ENV
+
+# Control de versiones
+.git
+.gitignore
+
+# Bytecode y cachés
+__pycache__
+*.py[cod]
+*.pyo
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# Entregable
+*.zip
+
+# Sistema y editor
+.DS_Store
+.idea
+.vscode
+Thumbs.db
+desktop.ini

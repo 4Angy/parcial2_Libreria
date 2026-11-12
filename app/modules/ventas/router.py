@@ -7,7 +7,7 @@ El alta recibe `VentaCreate` con el cliente y los renglones. `PATCH
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.database import get_session
@@ -24,9 +24,14 @@ router = APIRouter(prefix="/ventas", tags=["ventas"])
 async def crear_venta(
     datos: VentaCreate,
     session: Annotated[AsyncSession, Depends(get_session)],
+    background_tasks: BackgroundTasks,
 ) -> VentaRead:
-    """Registra la venta con sus renglones y devuelve el detalle."""
-    return await service.crear_venta(session, datos)
+    """Registra la venta con sus renglones y agenda el aviso del comprobante."""
+    venta = await service.crear_venta(session, datos)
+    background_tasks.add_task(
+        service.avisar_comprobante, venta.cliente_id, venta.id
+    )
+    return venta
 
 
 @router.get("/", response_model=list[VentaResumenRead], summary="Listar ventas")

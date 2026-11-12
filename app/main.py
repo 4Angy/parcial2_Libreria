@@ -1,5 +1,18 @@
 """Punto de entrada de la aplicación FastAPI."""
 
+import logging
+import sys
+
+# Configuración básica de registro: garantiza que los mensajes de la aplicación
+# (incluido el aviso del comprobante en segundo plano) sean visibles en la
+# consola y, por lo tanto, en los registros del contenedor.
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    stream=sys.stdout,
+    force=False,
+)
+
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
