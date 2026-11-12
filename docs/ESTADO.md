@@ -1,7 +1,7 @@
 # Estado del proyecto
 
 **Última actualización:** 11 de noviembre de 2026
-**Change activo:** `03-contratos-crud` — implementado y verificado (22 de 22 tareas), pendiente de archivar
+**Change activo:** `04-altas-con-relaciones` — propuesto y validado (14 tareas), pendiente de implementar
 
 ---
 
@@ -139,16 +139,20 @@ habilitación**: hay que cerrarlo antes de repetir `dism /online /enable-feature
 
 ## Próximo paso
 
-1. Archivar `03-contratos-crud` (sincroniza las cuatro delta specs a
-   `openspec/specs/`: `api-contracts`, `crud-endpoints`,
-   `pagination-and-filtering`, `error-handling`).
-
-2. Proponer `04-altas-con-relaciones` — 17 % de la nota. Cubre
+1. Implementar `04-altas-con-relaciones` — 17 % de la nota, 14 tareas. Cubre
    `POST /libros/` con la lista `autores[{autor_id, rol, orden}]` y
    `POST /ventas/` con `renglones[{libro_id, cantidad}]`, RN-04 a RN-07
    (precio copiado del libro, total calculado por el servidor, al menos un
    renglón y un libro por venta) y el 409 por clave foránea inexistente sin
    consultar antes si el id existe.
+
+2. Archivar `04` cuando la implementación esté verificada (crea
+   `nested-write-contracts` y `sale-registration`, y fusiona los deltas de
+   `crud-endpoints` y `error-handling`).
+
+3. Proponer `05-lecturas-sin-n1` — 8 % de la nota. Fija como criterio el
+   número constante de consultas del detalle de libro y de venta (caso C-07)
+   sobre lo que ya dejaron implementado `03` y `04`.
 
 ### Cómo levantar el entorno en una sesión nueva
 
@@ -170,8 +174,8 @@ Si `.env` no existe: copiarlo de `env.example` y poner la contraseña real.
 |---|---|---|---|
 | `01-proyecto-lifespan-health` | 1 · Proyecto, conexión y ciclo de vida | 8 % | Completo (13/13) |
 | `02-modelos-relaciones` | 2 · Modelos, restricciones y relaciones | 22 % | Completo (14/14) |
-| `03-contratos-crud` | 3 · Contratos y CRUD | 12 % | Implementado (22/22), pendiente de archivar |
-| `04-altas-con-relaciones` | 4 · Altas con relaciones | 17 % | Pendiente |
+| `03-contratos-crud` | 3 · Contratos y CRUD | 12 % | Completo (22/22), archivado |
+| `04-altas-con-relaciones` | 4 · Altas con relaciones | 17 % | Propuesto y validado (14 tareas) |
 | `05-lecturas-sin-n1` | 5 · Lecturas sin N+1 | 8 % | Pendiente |
 | `06-asincronia-background` | 6 · Asincronía sin bloqueos | 8 % | Pendiente |
 | `07-imagen-docker` | 7 · Contenedor | 15 % | Pendiente |
