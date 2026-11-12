@@ -1,7 +1,7 @@
 # Estado del proyecto
 
 **Última actualización:** 11 de noviembre de 2026
-**Change activo:** `04-altas-con-relaciones` — implementado y verificado (14 de 14 tareas), pendiente de archivar
+**Change activo:** ninguno — `04-altas-con-relaciones` archivado; el próximo es `05-lecturas-sin-n1`
 
 ---
 
@@ -166,15 +166,13 @@ habilitación**: hay que cerrarlo antes de repetir `dism /online /enable-feature
 
 ## Próximo paso
 
-1. Archivar `04-altas-con-relaciones` (crea `nested-write-contracts` y
-   `sale-registration`, y fusiona los deltas de `crud-endpoints` y
-   `error-handling`).
-
-2. Proponer `05-lecturas-sin-n1` — 8 % de la nota. Fija como criterio el
+1. Proponer `05-lecturas-sin-n1` — 8 % de la nota. Fija como criterio el
    número constante de consultas del detalle de libro y de venta (caso C-07)
-   sobre lo que ya dejaron implementado `03` y `04`.
+   sobre lo que ya dejaron implementado `03` y `04`: tres consultas fijas en
+   cada detalle, sin `SELECT` durante la serialización y con el orden de las
+   colecciones estabilizado.
 
-3. Continuar con `06-asincronia-background` (8 %), `07-imagen-docker` (15 %)
+2. Continuar con `06-asincronia-background` (8 %), `07-imagen-docker` (15 %)
    y `08-despliegue-vps` (10 %). Para `07`/`08` faltan datos del grupo:
    nombre del grupo, acceso al VPS, credenciales de la base de la cátedra y
    puerto asignado.
@@ -200,7 +198,7 @@ Si `.env` no existe: copiarlo de `env.example` y poner la contraseña real.
 | `01-proyecto-lifespan-health` | 1 · Proyecto, conexión y ciclo de vida | 8 % | Completo (13/13) |
 | `02-modelos-relaciones` | 2 · Modelos, restricciones y relaciones | 22 % | Completo (14/14) |
 | `03-contratos-crud` | 3 · Contratos y CRUD | 12 % | Completo (22/22), archivado |
-| `04-altas-con-relaciones` | 4 · Altas con relaciones | 17 % | Implementado (14/14), pendiente de archivar |
+| `04-altas-con-relaciones` | 4 · Altas con relaciones | 17 % | Completo (14/14), archivado |
 | `05-lecturas-sin-n1` | 5 · Lecturas sin N+1 | 8 % | Pendiente |
 | `06-asincronia-background` | 6 · Asincronía sin bloqueos | 8 % | Pendiente |
 | `07-imagen-docker` | 7 · Contenedor | 15 % | Pendiente |
